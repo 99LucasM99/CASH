@@ -3,622 +3,698 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DESHBOR - Controle Financeiro Pessoal</title>
+  <title>DESHBOR Supabase - Controle Financeiro</title>
 
-  <!-- Biblioteca dos gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
-      --bg: #070b14;
-      --bg-soft: #0d1424;
-      --card: #111a2e;
-      --card-2: #162238;
-      --border: rgba(255,255,255,.09);
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --blue: #38bdf8;
-      --blue-2: #2563eb;
-      --green: #22c55e;
-      --red: #ef4444;
-      --yellow: #f59e0b;
-      --purple: #a855f7;
-      --radius: 22px;
-      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --bg:#050816;
+      --bg2:#0f172a;
+      --card:#111a2e;
+      --card2:#162238;
+      --border:rgba(255,255,255,.10);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --blue:#38bdf8;
+      --blue2:#2563eb;
+      --green:#22c55e;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --purple:#a855f7;
+      --radius:22px;
+      --shadow:0 22px 60px rgba(0,0,0,.38);
     }
 
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Segoe UI", Arial, sans-serif;
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:"Segoe UI", Arial, sans-serif;
     }
 
     body {
-      min-height: 100vh;
+      min-height:100vh;
       background:
-        radial-gradient(circle at top left, rgba(56,189,248,.18), transparent 30%),
-        radial-gradient(circle at top right, rgba(168,85,247,.16), transparent 30%),
-        linear-gradient(135deg, #050816, #0f172a);
-      color: var(--text);
-      padding: 18px;
+        radial-gradient(circle at top left, rgba(56,189,248,.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(168,85,247,.15), transparent 32%),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      color:var(--text);
+      padding:18px;
+    }
+
+    .login-screen {
+      min-height:calc(100vh - 36px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .login-card {
+      width:100%;
+      max-width:460px;
+      background:rgba(17,26,46,.88);
+      border:1px solid var(--border);
+      border-radius:28px;
+      padding:26px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(18px);
+    }
+
+    .login-logo {
+      width:62px;
+      height:62px;
+      border-radius:20px;
+      background:linear-gradient(135deg,var(--blue2),var(--blue),var(--purple));
+      display:grid;
+      place-items:center;
+      font-size:25px;
+      font-weight:900;
+      margin-bottom:16px;
+    }
+
+    .login-card h1 {
+      font-size:28px;
+      margin-bottom:6px;
+    }
+
+    .login-card p {
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+      margin-bottom:18px;
+    }
+
+    .login-actions {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
     }
 
     .app {
-      max-width: 1450px;
-      margin: auto;
-      display: grid;
-      grid-template-columns: 285px 1fr;
-      gap: 18px;
+      max-width:1450px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:285px 1fr;
+      gap:18px;
+    }
+
+    .hidden {
+      display:none !important;
     }
 
     .sidebar {
-      background: rgba(17,26,46,.85);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      min-height: calc(100vh - 36px);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-      position: sticky;
-      top: 18px;
+      background:rgba(17,26,46,.85);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      min-height:calc(100vh - 36px);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+      position:sticky;
+      top:18px;
     }
 
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:24px;
     }
 
     .brand-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--blue-2), var(--blue), var(--purple));
-      font-weight: 900;
-      font-size: 21px;
-      box-shadow: 0 12px 28px rgba(56,189,248,.24);
+      width:48px;
+      height:48px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,var(--blue2),var(--blue),var(--purple));
+      font-weight:900;
+      font-size:21px;
+      box-shadow:0 12px 28px rgba(56,189,248,.24);
     }
 
     .brand h1 {
-      font-size: 21px;
-      letter-spacing: .5px;
+      font-size:21px;
+      letter-spacing:.5px;
     }
 
     .brand p {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 3px;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:3px;
+      word-break:break-word;
     }
 
     .menu {
-      display: grid;
-      gap: 10px;
+      display:grid;
+      gap:10px;
     }
 
     .menu button {
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--muted);
-      padding: 13px 14px;
-      border-radius: 15px;
-      cursor: pointer;
-      text-align: left;
-      font-size: 14px;
-      transition: .2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--muted);
+      padding:13px 14px;
+      border-radius:15px;
+      cursor:pointer;
+      text-align:left;
+      font-size:14px;
+      transition:.2s;
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
 
     .menu button:hover,
     .menu button.active {
-      background: rgba(56,189,248,.12);
-      color: var(--text);
-      border-color: rgba(56,189,248,.22);
+      background:rgba(56,189,248,.12);
+      color:var(--text);
+      border-color:rgba(56,189,248,.22);
     }
 
     .side-note {
-      margin-top: 18px;
-      padding: 15px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(168,85,247,.13));
-      border: 1px solid var(--border);
+      margin-top:18px;
+      padding:15px;
+      border-radius:18px;
+      background:linear-gradient(135deg,rgba(37,99,235,.18),rgba(168,85,247,.13));
+      border:1px solid var(--border);
     }
 
     .side-note h3 {
-      font-size: 14px;
-      margin-bottom: 8px;
+      font-size:14px;
+      margin-bottom:8px;
     }
 
     .side-note p {
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.45;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.45;
     }
 
     main {
-      min-width: 0;
+      min-width:0;
     }
 
     .topbar {
-      background: rgba(17,26,46,.78);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 18px;
+      background:rgba(17,26,46,.78);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      margin-bottom:18px;
     }
 
     .topbar h2 {
-      font-size: 28px;
-      letter-spacing: .3px;
+      font-size:28px;
+      letter-spacing:.3px;
     }
 
     .topbar p {
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 13px;
+      margin-top:5px;
+      color:var(--muted);
+      font-size:13px;
     }
 
     .top-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
     }
 
     input, select, textarea {
-      width: 100%;
-      background: #0a1222;
-      color: var(--text);
-      border: 1px solid rgba(148,163,184,.2);
-      border-radius: 14px;
-      padding: 12px 13px;
-      outline: none;
+      width:100%;
+      background:#0a1222;
+      color:var(--text);
+      border:1px solid rgba(148,163,184,.22);
+      border-radius:14px;
+      padding:12px 13px;
+      outline:none;
     }
 
     input:focus, select:focus, textarea:focus {
-      border-color: rgba(56,189,248,.75);
-      box-shadow: 0 0 0 3px rgba(56,189,248,.12);
+      border-color:rgba(56,189,248,.75);
+      box-shadow:0 0 0 3px rgba(56,189,248,.12);
     }
 
     label {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 7px;
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:7px;
     }
 
     .btn {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 14px;
-      background: var(--card-2);
-      color: var(--text);
-      cursor: pointer;
-      transition: .2s;
-      white-space: nowrap;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 14px;
+      background:var(--card2);
+      color:var(--text);
+      cursor:pointer;
+      transition:.2s;
+      white-space:nowrap;
     }
 
     .btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.08);
+      transform:translateY(-1px);
+      filter:brightness(1.08);
     }
 
     .btn.primary {
-      border: none;
-      background: linear-gradient(135deg, var(--blue-2), var(--blue));
-      color: white;
-      font-weight: 800;
+      border:none;
+      background:linear-gradient(135deg,var(--blue2),var(--blue));
+      color:white;
+      font-weight:800;
     }
 
     .btn.green {
-      border: none;
-      background: linear-gradient(135deg, #16a34a, var(--green));
-      color: white;
-      font-weight: 800;
+      border:none;
+      background:linear-gradient(135deg,#16a34a,var(--green));
+      color:white;
+      font-weight:800;
     }
 
     .btn.red {
-      background: rgba(239,68,68,.13);
-      border-color: rgba(239,68,68,.28);
-      color: #fecaca;
+      background:rgba(239,68,68,.13);
+      border-color:rgba(239,68,68,.28);
+      color:#fecaca;
     }
 
     .btn.small {
-      padding: 8px 10px;
-      border-radius: 11px;
-      font-size: 12px;
+      padding:8px 10px;
+      border-radius:11px;
+      font-size:12px;
     }
 
     .section {
-      display: none;
+      display:none;
     }
 
     .section.active {
-      display: block;
+      display:block;
     }
 
     .grid {
-      display: grid;
-      gap: 18px;
+      display:grid;
+      gap:18px;
     }
 
     .metrics {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns:repeat(4,minmax(0,1fr));
     }
 
     .card {
-      background: rgba(17,26,46,.82);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
+      background:rgba(17,26,46,.82);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
     }
 
     .card h3 {
-      font-size: 17px;
-      margin-bottom: 6px;
+      font-size:17px;
+      margin-bottom:6px;
     }
 
-    .card .desc {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
+    .desc {
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
     }
 
     .metric-card {
-      position: relative;
-      overflow: hidden;
+      position:relative;
+      overflow:hidden;
     }
 
     .metric-card::after {
-      content: "";
-      position: absolute;
-      right: -45px;
-      top: -45px;
-      width: 115px;
-      height: 115px;
-      border-radius: 50%;
-      background: rgba(56,189,248,.08);
+      content:"";
+      position:absolute;
+      right:-45px;
+      top:-45px;
+      width:115px;
+      height:115px;
+      border-radius:50%;
+      background:rgba(56,189,248,.08);
     }
 
     .metric-title {
-      color: var(--muted);
-      font-size: 13px;
+      color:var(--muted);
+      font-size:13px;
     }
 
     .metric-value {
-      font-size: 29px;
-      font-weight: 900;
-      margin-top: 8px;
-      letter-spacing: -.7px;
+      font-size:29px;
+      font-weight:900;
+      margin-top:8px;
+      letter-spacing:-.7px;
     }
 
     .metric-hint {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 8px;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
     }
 
-    .green-text { color: #86efac; }
-    .red-text { color: #fca5a5; }
-    .blue-text { color: #7dd3fc; }
-    .yellow-text { color: #fcd34d; }
+    .green-text { color:#86efac; }
+    .red-text { color:#fca5a5; }
+    .blue-text { color:#7dd3fc; }
+    .yellow-text { color:#fcd34d; }
 
     .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 18px;
-      margin-top: 18px;
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:18px;
+      margin-top:18px;
     }
 
     .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 18px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      margin-top:18px;
     }
 
     .chart-box {
-      height: 330px;
-      position: relative;
+      height:330px;
+      position:relative;
     }
 
     .chart-box.large {
-      height: 385px;
+      height:385px;
     }
 
     .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 14px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
     }
 
     .full {
-      grid-column: 1 / -1;
+      grid-column:1/-1;
     }
 
     .quick-launch {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      gap: 10px;
-      align-items: end;
-      margin-top: 14px;
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      gap:10px;
+      align-items:end;
+      margin-top:14px;
     }
 
     table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 9px;
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 9px;
     }
 
     th {
-      color: var(--muted);
-      font-size: 12px;
-      text-align: left;
-      font-weight: 500;
-      padding: 0 10px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:left;
+      font-weight:500;
+      padding:0 10px;
     }
 
     td {
-      background: rgba(10,18,34,.82);
-      padding: 12px 10px;
-      font-size: 13px;
-      border-top: 1px solid rgba(255,255,255,.06);
-      border-bottom: 1px solid rgba(255,255,255,.06);
+      background:rgba(10,18,34,.82);
+      padding:12px 10px;
+      font-size:13px;
+      border-top:1px solid rgba(255,255,255,.06);
+      border-bottom:1px solid rgba(255,255,255,.06);
     }
 
     td:first-child {
-      border-radius: 14px 0 0 14px;
-      border-left: 1px solid rgba(255,255,255,.06);
+      border-radius:14px 0 0 14px;
+      border-left:1px solid rgba(255,255,255,.06);
     }
 
     td:last-child {
-      border-radius: 0 14px 14px 0;
-      border-right: 1px solid rgba(255,255,255,.06);
+      border-radius:0 14px 14px 0;
+      border-right:1px solid rgba(255,255,255,.06);
     }
 
     .tag {
-      display: inline-flex;
-      padding: 6px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      background: rgba(255,255,255,.08);
-      color: var(--text);
+      display:inline-flex;
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      background:rgba(255,255,255,.08);
+      color:var(--text);
     }
 
     .tag.income {
-      background: rgba(34,197,94,.14);
-      color: #bbf7d0;
+      background:rgba(34,197,94,.14);
+      color:#bbf7d0;
     }
 
     .tag.expense {
-      background: rgba(239,68,68,.14);
-      color: #fecaca;
+      background:rgba(239,68,68,.14);
+      color:#fecaca;
     }
 
     .tag.impulso,
     .tag.arrependimento {
-      background: rgba(245,158,11,.15);
-      color: #fde68a;
+      background:rgba(245,158,11,.15);
+      color:#fde68a;
     }
 
     .tag.essencial {
-      background: rgba(34,197,94,.14);
-      color: #bbf7d0;
+      background:rgba(34,197,94,.14);
+      color:#bbf7d0;
     }
 
     .tag.util {
-      background: rgba(56,189,248,.14);
-      color: #bae6fd;
+      background:rgba(56,189,248,.14);
+      color:#bae6fd;
     }
 
     .money-plus {
-      color: #86efac;
-      font-weight: 900;
+      color:#86efac;
+      font-weight:900;
     }
 
     .money-minus {
-      color: #fca5a5;
-      font-weight: 900;
+      color:#fca5a5;
+      font-weight:900;
     }
 
     .analysis-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 14px;
+      display:grid;
+      gap:12px;
+      margin-top:14px;
     }
 
     .analysis-card {
-      border-radius: 18px;
-      padding: 14px;
-      background: rgba(10,18,34,.75);
-      border: 1px solid var(--border);
+      border-radius:18px;
+      padding:14px;
+      background:rgba(10,18,34,.75);
+      border:1px solid var(--border);
     }
 
     .analysis-card strong {
-      display: block;
-      margin-bottom: 6px;
+      display:block;
+      margin-bottom:6px;
     }
 
     .analysis-card p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
     }
 
     .analysis-card.good {
-      background: rgba(34,197,94,.08);
-      border-color: rgba(34,197,94,.28);
+      background:rgba(34,197,94,.08);
+      border-color:rgba(34,197,94,.28);
     }
 
     .analysis-card.warn {
-      background: rgba(245,158,11,.08);
-      border-color: rgba(245,158,11,.30);
+      background:rgba(245,158,11,.08);
+      border-color:rgba(245,158,11,.30);
     }
 
     .analysis-card.danger {
-      background: rgba(239,68,68,.08);
-      border-color: rgba(239,68,68,.30);
+      background:rgba(239,68,68,.08);
+      border-color:rgba(239,68,68,.30);
     }
 
     .progress {
-      width: 100%;
-      height: 12px;
-      background: #0a1222;
-      border: 1px solid rgba(148,163,184,.16);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 10px;
+      width:100%;
+      height:12px;
+      background:#0a1222;
+      border:1px solid rgba(148,163,184,.16);
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:10px;
     }
 
     .bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--green), var(--blue));
-      transition: .3s;
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--green),var(--blue));
+      transition:.3s;
     }
 
     .bar.warn {
-      background: linear-gradient(90deg, var(--yellow), #f97316);
+      background:linear-gradient(90deg,var(--yellow),#f97316);
     }
 
     .bar.danger {
-      background: linear-gradient(90deg, var(--red), #f97316);
+      background:linear-gradient(90deg,var(--red),#f97316);
     }
 
     .empty {
-      border: 1px dashed rgba(255,255,255,.18);
-      border-radius: 18px;
-      padding: 28px 12px;
-      text-align: center;
-      color: var(--muted);
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.65);
-      z-index: 40;
-      padding: 18px;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      max-width: 650px;
-      width: 100%;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:18px;
+      padding:28px 12px;
+      text-align:center;
+      color:var(--muted);
     }
 
     .toast {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 50;
-      display: none;
-      max-width: 380px;
-      background: #0a1222;
-      border: 1px solid rgba(56,189,248,.3);
-      border-radius: 15px;
-      padding: 13px 15px;
-      color: var(--text);
-      box-shadow: var(--shadow);
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:50;
+      display:none;
+      max-width:390px;
+      background:#0a1222;
+      border:1px solid rgba(56,189,248,.3);
+      border-radius:15px;
+      padding:13px 15px;
+      color:var(--text);
+      box-shadow:var(--shadow);
     }
 
     .toast.show {
-      display: block;
+      display:block;
     }
 
-    @media (max-width: 1050px) {
+    .sql-box {
+      background:#07101f;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:14px;
+      overflow:auto;
+      color:#dbeafe;
+      font-size:12.5px;
+      line-height:1.45;
+      max-height:420px;
+      white-space:pre;
+    }
+
+    @media(max-width:1050px) {
       .app {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
       }
 
       .sidebar {
-        position: relative;
-        top: 0;
-        min-height: auto;
+        position:relative;
+        top:0;
+        min-height:auto;
       }
 
       .menu {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns:repeat(4,minmax(0,1fr));
       }
 
       .metrics {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:repeat(2,minmax(0,1fr));
       }
 
       .dashboard-grid,
       .charts-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
       }
     }
 
-    @media (max-width: 680px) {
+    @media(max-width:680px) {
       body {
-        padding: 10px;
+        padding:10px;
       }
 
       .topbar {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction:column;
+        align-items:flex-start;
       }
 
       .top-actions,
       .top-actions input,
       .top-actions button {
-        width: 100%;
+        width:100%;
       }
 
       .menu {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:repeat(2,minmax(0,1fr));
       }
 
       .metrics,
       .form-grid,
-      .quick-launch {
-        grid-template-columns: 1fr;
+      .quick-launch,
+      .login-actions {
+        grid-template-columns:1fr;
       }
 
       .chart-box,
       .chart-box.large {
-        height: 300px;
+        height:300px;
       }
 
       th:nth-child(4),
       td:nth-child(4) {
-        display: none;
+        display:none;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">R$</div>
+      <h1>DESHBOR</h1>
+      <p>Entre na sua conta para salvar seus lançamentos no Supabase com segurança por usuário.</p>
+
+      <div>
+        <label>E-mail</label>
+        <input id="loginEmail" type="email" placeholder="seuemail@email.com" />
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Senha</label>
+        <input id="loginSenha" type="password" placeholder="Sua senha" />
+      </div>
+
+      <div class="login-actions">
+        <button class="btn green" onclick="entrar()">Entrar</button>
+        <button class="btn primary" onclick="cadastrar()">Criar conta</button>
+      </div>
+
+      <div class="side-note" style="margin-top:16px">
+        <h3>Importante</h3>
+        <p>Antes de usar, cole sua Project URL no código. A chave publishable já foi colocada.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="app hidden">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">R$</div>
         <div>
           <h1>DESHBOR</h1>
-          <p>Controle financeiro pessoal</p>
+          <p id="emailUsuario">Carregando...</p>
         </div>
       </div>
 
@@ -631,12 +707,12 @@
 
       <div class="side-note">
         <h3>Entrada rápida</h3>
-        <p>Você pode digitar: “salário 2500”, “mercado 30”, “jogo 40”, “delivery 25” ou “recebi bico 150”.</p>
+        <p>Digite: “salário 2500”, “mercado 30”, “jogo 40”, “delivery 25” ou “recebi bico 150”.</p>
       </div>
 
       <div class="side-note">
-        <h3>Como os dados são salvos?</h3>
-        <p>Os lançamentos ficam salvos no navegador usando localStorage. Para não perder, use o botão de backup.</p>
+        <h3>Supabase</h3>
+        <p>Os dados são salvos na tabela <b>financas_lancamentos</b>, protegidos por login e RLS.</p>
       </div>
     </aside>
 
@@ -649,11 +725,11 @@
 
         <div class="top-actions">
           <input type="month" id="filtroMes" onchange="renderizarTudo()" />
-          <button class="btn primary" onclick="abrirModal()">Novo lançamento</button>
+          <button class="btn primary" onclick="abrirJanela('lancamentos', document.querySelector('.menu button:nth-child(2)'))">Novo lançamento</button>
+          <button class="btn red" onclick="sair()">Sair</button>
         </div>
       </header>
 
-      <!-- JANELA DESHBOR -->
       <section id="deshbor" class="section active">
         <div class="grid metrics">
           <div class="card metric-card">
@@ -684,7 +760,7 @@
         <div class="dashboard-grid">
           <div class="card">
             <h3>Visão geral do mês</h3>
-            <p class="desc">Este gráfico compara o que entrou, o que saiu e o saldo que ainda sobrou.</p>
+            <p class="desc">Compara entradas, gastos e saldo.</p>
             <div class="chart-box large">
               <canvas id="graficoResumo"></canvas>
             </div>
@@ -692,12 +768,11 @@
 
           <div class="card">
             <h3>Uso do dinheiro</h3>
-            <p class="desc">Mostra quanto do dinheiro recebido já foi comprometido.</p>
+            <p class="desc">Quanto do dinheiro recebido já foi comprometido.</p>
             <div class="progress">
               <div class="bar" id="barraUso"></div>
             </div>
             <p class="desc" id="textoUso" style="margin-top:12px">0% usado.</p>
-
             <div class="analysis-list" id="alertasDeshbor"></div>
           </div>
         </div>
@@ -721,7 +796,7 @@
 
           <div class="card">
             <h3>Tipo de compra</h3>
-            <p class="desc">Mostra se seus gastos são essenciais, úteis ou por impulso.</p>
+            <p class="desc">Essencial, útil, impulso ou arrependimento.</p>
             <div class="chart-box">
               <canvas id="graficoImportancia"></canvas>
             </div>
@@ -729,7 +804,7 @@
 
           <div class="card">
             <h3>Top gastos do mês</h3>
-            <p class="desc">Lista os maiores gastos para você analisar melhor.</p>
+            <p class="desc">Maiores gastos para você analisar.</p>
             <div class="analysis-list" id="topGastos"></div>
           </div>
         </div>
@@ -756,7 +831,6 @@
         </div>
       </section>
 
-      <!-- JANELA LANÇAMENTOS -->
       <section id="lancamentos" class="section">
         <div class="card">
           <h3>Lançamento rápido</h3>
@@ -777,7 +851,7 @@
             <h3>Todos os lançamentos</h3>
             <p class="desc">Você pode editar ou apagar qualquer lançamento.</p>
 
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
               <input id="pesquisa" placeholder="Pesquisar por descrição ou categoria" oninput="renderizarTudo()" />
               <select id="filtroTipo" onchange="renderizarTudo()" style="max-width:180px">
                 <option value="todos">Todos</option>
@@ -876,19 +950,18 @@
               </div>
 
               <div class="full">
-                <button class="btn green" style="width:100%" type="submit">Salvar lançamento</button>
+                <button class="btn green" style="width:100%" type="submit">Salvar no Supabase</button>
               </div>
             </form>
           </div>
         </div>
       </section>
 
-      <!-- JANELA ANÁLISE -->
       <section id="analise" class="section">
         <div class="dashboard-grid">
           <div class="card">
             <h3>O que talvez você não deveria ter comprado</h3>
-            <p class="desc">O sistema analisa compras por impulso, arrependimento e categorias que pesaram demais.</p>
+            <p class="desc">Analisa compras por impulso, arrependimento e categorias que pesaram demais.</p>
             <div class="analysis-list" id="comprasRuins"></div>
           </div>
 
@@ -918,12 +991,11 @@
         </div>
       </section>
 
-      <!-- JANELA CONFIGURAÇÃO -->
       <section id="config" class="section">
         <div class="dashboard-grid">
           <div class="card">
-            <h3>Configurações do mês</h3>
-            <p class="desc">Coloque um limite para o sistema saber quando te alertar.</p>
+            <h3>Configurações locais</h3>
+            <p class="desc">Essas preferências ficam salvas neste navegador.</p>
 
             <div class="form-grid">
               <div>
@@ -943,118 +1015,319 @@
           </div>
 
           <div class="card">
-            <h3>Backup dos dados</h3>
-            <p class="desc">Use para não perder seus lançamentos.</p>
+            <h3>Backup</h3>
+            <p class="desc">Exporte seus dados caso queira guardar uma cópia fora do Supabase.</p>
 
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
               <button class="btn green" onclick="exportarJSON()">Exportar backup</button>
               <button class="btn" onclick="exportarCSV()">Exportar CSV</button>
-
-              <label class="btn">
-                Importar backup
-                <input type="file" accept=".json" onchange="importarJSON(event)" style="display:none">
-              </label>
-
-              <button class="btn red" onclick="apagarTudo()">Apagar tudo</button>
+              <button class="btn primary" onclick="carregarLancamentos()">Recarregar Supabase</button>
             </div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>SQL necessário no Supabase</h3>
+          <p class="desc">Cole este SQL no Supabase em SQL Editor antes de usar o site.</p>
+          <div class="sql-box" id="sqlBox"></div>
+          <button class="btn primary" style="margin-top:12px" onclick="copiarSQL()">Copiar SQL</button>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- MODAL -->
-  <div class="modal" id="modalLancamento">
-    <div class="modal-content card">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:14px">
-        <div>
-          <h3>Novo lançamento</h3>
-          <p class="desc">Cadastre entrada ou gasto.</p>
-        </div>
-        <button class="btn red small" onclick="fecharModal()">Fechar</button>
-      </div>
-
-      <div id="formDentroModal"></div>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
   <script>
-    const CHAVE = "deshbor_financeiro_pessoal_v2";
+    const SUPABASE_URL = "COLE_SUA_PROJECT_URL_AQUI";
+    const SUPABASE_KEY = "sb_publishable_w0tWZGjf4yLiQbn-paSfbA_ntx35b_h";
 
-    let dados = {
-      lancamentos: [
-        {
-          id: gerarId(),
-          tipo: "entrada",
-          valor: 2500,
-          descricao: "Salário",
-          categoria: "Salário",
-          data: dataHoje(),
-          importancia: "essencial",
-          pagamento: "Pix"
-        },
-        {
-          id: gerarId(),
-          tipo: "gasto",
-          valor: 180,
-          descricao: "Mercado",
-          categoria: "Mercado",
-          data: dataHoje(),
-          importancia: "essencial",
-          pagamento: "Débito"
-        },
-        {
-          id: gerarId(),
-          tipo: "gasto",
-          valor: 40,
-          descricao: "Jogo online",
-          categoria: "Jogo",
-          data: dataHoje(),
-          importancia: "impulso",
-          pagamento: "Pix"
-        },
-        {
-          id: gerarId(),
-          tipo: "gasto",
-          valor: 35,
-          descricao: "Delivery",
-          categoria: "Delivery",
-          data: dataHoje(),
-          importancia: "impulso",
-          pagamento: "Crédito"
-        }
-      ],
-      config: {
-        limiteMensal: 0,
-        reservaDesejada: 0
-      }
-    };
+    const SQL_NECESSARIO = `create table if not exists public.financas_lancamentos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  tipo text not null check (tipo in ('entrada', 'gasto')),
+  valor numeric(12,2) not null check (valor >= 0),
+  descricao text not null,
+  categoria text not null,
+  data date not null default current_date,
+  importancia text not null default 'essencial' check (importancia in ('essencial', 'util', 'impulso', 'arrependimento')),
+  pagamento text default 'Pix',
+  created_at timestamptz not null default now()
+);
 
+alter table public.financas_lancamentos enable row level security;
+
+drop policy if exists "Ler meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Inserir meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Atualizar meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Apagar meus lancamentos" on public.financas_lancamentos;
+
+create policy "Ler meus lancamentos"
+on public.financas_lancamentos
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Inserir meus lancamentos"
+on public.financas_lancamentos
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Atualizar meus lancamentos"
+on public.financas_lancamentos
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Apagar meus lancamentos"
+on public.financas_lancamentos
+for delete
+to authenticated
+using (auth.uid() = user_id);`;
+
+    const CONFIG_KEY = "deshbor_config_local_v1";
+
+    let supabaseClient = null;
+    let usuarioAtual = null;
+    let lancamentos = [];
     let graficos = {};
 
-    function carregar() {
-      const salvo = localStorage.getItem(CHAVE);
+    let config = {
+      limiteMensal: 0,
+      reservaDesejada: 0
+    };
 
-      if (salvo) {
-        try {
-          dados = JSON.parse(salvo);
-        } catch (erro) {
-          console.log("Erro ao carregar dados salvos");
-        }
-      }
-
+    function iniciar() {
+      document.getElementById("sqlBox").textContent = SQL_NECESSARIO;
       document.getElementById("filtroMes").value = mesAtual();
       document.getElementById("data").value = dataHoje();
-      document.getElementById("limiteMensal").value = dados.config.limiteMensal || "";
-      document.getElementById("reservaDesejada").value = dados.config.reservaDesejada || "";
 
+      const configSalva = localStorage.getItem(CONFIG_KEY);
+      if (configSalva) {
+        try {
+          config = JSON.parse(configSalva);
+        } catch(e) {}
+      }
+
+      document.getElementById("limiteMensal").value = config.limiteMensal || "";
+      document.getElementById("reservaDesejada").value = config.reservaDesejada || "";
+
+      if (SUPABASE_URL === "COLE_SUA_PROJECT_URL_AQUI") {
+        aviso("Cole a Project URL do Supabase no código antes de usar.");
+        return;
+      }
+
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      supabaseClient.auth.getSession().then(({
+        data
+      }) => {
+        if (data.session) {
+          usuarioAtual = data.session.user;
+          mostrarApp();
+          carregarLancamentos();
+        }
+      });
+
+      supabaseClient.auth.onAuthStateChange((evento, sessao) => {
+        usuarioAtual = sessao?.user || null;
+
+        if (usuarioAtual) {
+          mostrarApp();
+          carregarLancamentos();
+        } else {
+          mostrarLogin();
+        }
+      });
+    }
+
+    async function cadastrar() {
+      if (!supabaseClient) {
+        aviso("Configure a Project URL primeiro.");
+        return;
+      }
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const senha = document.getElementById("loginSenha").value;
+
+      if (!email || !senha) {
+        aviso("Preencha e-mail e senha.");
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: senha
+      });
+
+      if (error) {
+        aviso(error.message);
+        return;
+      }
+
+      aviso("Conta criada. Se o Supabase pedir confirmação, verifique seu e-mail.");
+    }
+
+    async function entrar() {
+      if (!supabaseClient) {
+        aviso("Configure a Project URL primeiro.");
+        return;
+      }
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const senha = document.getElementById("loginSenha").value;
+
+      if (!email || !senha) {
+        aviso("Preencha e-mail e senha.");
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: senha
+      });
+
+      if (error) {
+        aviso(error.message);
+        return;
+      }
+
+      aviso("Login realizado.");
+    }
+
+    async function sair() {
+      await supabaseClient.auth.signOut();
+      lancamentos = [];
+      destruirTodosGraficos();
+      mostrarLogin();
+    }
+
+    function mostrarApp() {
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      document.getElementById("emailUsuario").textContent = usuarioAtual?.email || "Usuário logado";
+    }
+
+    function mostrarLogin() {
+      document.getElementById("loginScreen").classList.remove("hidden");
+      document.getElementById("app").classList.add("hidden");
+    }
+
+    async function carregarLancamentos() {
+      if (!usuarioAtual) return;
+
+      const { data, error } = await supabaseClient
+        .from("financas_lancamentos")
+        .select("*")
+        .order("data", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        aviso("Erro ao carregar: " + error.message);
+        return;
+      }
+
+      lancamentos = data || [];
       renderizarTudo();
     }
 
-    function salvar() {
-      localStorage.setItem(CHAVE, JSON.stringify(dados));
+    async function salvarLancamento(evento) {
+      evento.preventDefault();
+
+      if (!usuarioAtual) {
+        aviso("Faça login primeiro.");
+        return;
+      }
+
+      const id = document.getElementById("idLancamento").value;
+
+      const item = {
+        tipo: document.getElementById("tipo").value,
+        valor: Number(document.getElementById("valor").value || 0),
+        descricao: document.getElementById("descricao").value.trim(),
+        categoria: document.getElementById("categoria").value,
+        data: document.getElementById("data").value,
+        importancia: document.getElementById("importancia").value,
+        pagamento: document.getElementById("pagamento").value
+      };
+
+      if (!item.descricao || !item.valor || !item.data) {
+        aviso("Preencha descrição, valor e data.");
+        return;
+      }
+
+      let resultado;
+
+      if (id) {
+        resultado = await supabaseClient
+          .from("financas_lancamentos")
+          .update(item)
+          .eq("id", id)
+          .select()
+          .single();
+      } else {
+        resultado = await supabaseClient
+          .from("financas_lancamentos")
+          .insert(item)
+          .select()
+          .single();
+      }
+
+      if (resultado.error) {
+        aviso("Erro ao salvar: " + resultado.error.message);
+        return;
+      }
+
+      limparFormulario();
+      aviso("Lançamento salvo no Supabase.");
+      await carregarLancamentos();
+    }
+
+    async function apagarLancamento(id) {
+      if (!confirm("Deseja apagar este lançamento?")) return;
+
+      const { error } = await supabaseClient
+        .from("financas_lancamentos")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        aviso("Erro ao apagar: " + error.message);
+        return;
+      }
+
+      aviso("Lançamento apagado.");
+      await carregarLancamentos();
+    }
+
+    function editarLancamento(id) {
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+
+      document.getElementById("idLancamento").value = item.id;
+      document.getElementById("tipo").value = item.tipo;
+      document.getElementById("valor").value = item.valor;
+      document.getElementById("descricao").value = item.descricao;
+      document.getElementById("categoria").value = item.categoria;
+      document.getElementById("data").value = item.data;
+      document.getElementById("importancia").value = item.importancia;
+      document.getElementById("pagamento").value = item.pagamento || "Pix";
+
+      abrirJanela("lancamentos", document.querySelector(".menu button:nth-child(2)"));
+      window.scrollTo({ top:0, behavior:"smooth" });
+    }
+
+    function limparFormulario() {
+      document.getElementById("idLancamento").value = "";
+      document.getElementById("tipo").value = "gasto";
+      document.getElementById("valor").value = "";
+      document.getElementById("descricao").value = "";
+      document.getElementById("categoria").value = "Outros";
+      document.getElementById("data").value = dataHoje();
+      document.getElementById("importancia").value = "essencial";
+      document.getElementById("pagamento").value = "Pix";
     }
 
     function abrirJanela(id, botao) {
@@ -1068,22 +1341,19 @@
         deshbor: ["DESHBOR", "Resumo visual do seu dinheiro, gastos, entradas e riscos."],
         lancamentos: ["Lançamentos", "Cadastre salário, compras, mercado, jogos, delivery e outros gastos."],
         analise: ["Análise financeira", "Veja o que não deveria ter comprado e como contornar."],
-        config: ["Configuração", "Ajuste limite mensal, reserva e backup."]
+        config: ["Configuração", "Ajuste limite mensal, backup e SQL do Supabase."]
       };
 
       document.getElementById("tituloPagina").textContent = titulos[id][0];
       document.getElementById("subtituloPagina").textContent = titulos[id][1];
 
-      setTimeout(renderizarTudo, 50);
+      setTimeout(renderizarTudo, 80);
     }
 
     function renderizarTudo() {
-      salvar();
-
       const resumo = calcularResumo();
-
       renderizarCards(resumo);
-      renderizarTabelas();
+      renderizarTabelas(resumo);
       renderizarAlertas(resumo);
       renderizarAnalise(resumo);
       renderizarGraficos(resumo);
@@ -1092,9 +1362,7 @@
     function calcularResumo() {
       const mes = document.getElementById("filtroMes").value || mesAtual();
 
-      const lancamentosMes = dados.lancamentos.filter(item => {
-        return item.data && item.data.startsWith(mes);
-      });
+      const lancamentosMes = lancamentos.filter(item => item.data && item.data.startsWith(mes));
 
       const entradas = lancamentosMes
         .filter(item => item.tipo === "entrada")
@@ -1107,7 +1375,6 @@
       const saldo = entradas - gastos;
 
       const gastosPorCategoria = {};
-      const entradasPorCategoria = {};
       const importancia = {};
       const porDia = {};
 
@@ -1119,14 +1386,10 @@
           importancia[item.importancia] = (importancia[item.importancia] || 0) + valor;
         }
 
-        if (item.tipo === "entrada") {
-          entradasPorCategoria[item.categoria] = (entradasPorCategoria[item.categoria] || 0) + valor;
-        }
-
         const dia = item.data.slice(8, 10);
 
         if (!porDia[dia]) {
-          porDia[dia] = { entradas: 0, gastos: 0 };
+          porDia[dia] = { entradas:0, gastos:0 };
         }
 
         if (item.tipo === "entrada") {
@@ -1136,7 +1399,7 @@
         }
       });
 
-      const base = entradas || dados.config.limiteMensal || 0;
+      const base = entradas || config.limiteMensal || 0;
       const percentualUso = base > 0 ? (gastos / base) * 100 : 0;
 
       return {
@@ -1145,7 +1408,6 @@
         gastos,
         saldo,
         gastosPorCategoria,
-        entradasPorCategoria,
         importancia,
         porDia,
         percentualUso
@@ -1180,7 +1442,7 @@
       if (pct >= 90) barra.classList.add("danger");
       else if (pct >= 70) barra.classList.add("warn");
 
-      if (resumo.entradas === 0 && dados.config.limiteMensal === 0) {
+      if (resumo.entradas === 0 && config.limiteMensal === 0) {
         document.getElementById("textoUso").textContent = "Adicione seu salário ou defina um limite mensal.";
       } else {
         document.getElementById("textoUso").textContent = resumo.percentualUso.toFixed(1) + "% do dinheiro do mês já foi usado.";
@@ -1205,11 +1467,11 @@
         alertas.push(["warn", "Atenção ao ritmo", "Você já usou mais de 70% do dinheiro do mês."]);
       }
 
-      const gastosPequenos = resumo.lancamentosMes.filter(item => item.tipo === "gasto" && Number(item.valor) <= 15);
-      const totalPequenos = gastosPequenos.reduce((soma, item) => soma + Number(item.valor), 0);
+      const pequenos = resumo.lancamentosMes.filter(item => item.tipo === "gasto" && Number(item.valor) <= 15);
+      const totalPequenos = pequenos.reduce((soma, item) => soma + Number(item.valor), 0);
 
-      if (gastosPequenos.length >= 4 && totalPequenos >= 50) {
-        alertas.push(["warn", "Gasto formiguinha", gastosPequenos.length + " compras pequenas somaram " + moeda(totalPequenos) + "."]);
+      if (pequenos.length >= 4 && totalPequenos >= 50) {
+        alertas.push(["warn", "Gasto formiguinha", pequenos.length + " compras pequenas somaram " + moeda(totalPequenos) + "."]);
       }
 
       if (alertas.length === 0) {
@@ -1219,8 +1481,7 @@
       caixa.innerHTML = alertas.map(a => criarCardAnalise(a[0], a[1], a[2])).join("");
     }
 
-    function renderizarTabelas() {
-      const resumo = calcularResumo();
+    function renderizarTabelas(resumo) {
       const pesquisa = (document.getElementById("pesquisa")?.value || "").toLowerCase();
       const filtroTipo = document.getElementById("filtroTipo")?.value || "todos";
 
@@ -1237,17 +1498,15 @@
         );
       }
 
-      lista.sort((a, b) => b.data.localeCompare(a.data));
+      lista.sort((a,b) => b.data.localeCompare(a.data));
 
-      const html = lista.length
+      document.getElementById("tabelaLancamentos").innerHTML = lista.length
         ? lista.map(linhaTabela).join("")
         : '<tr><td colspan="7"><div class="empty">Nenhum lançamento encontrado.</div></td></tr>';
 
-      document.getElementById("tabelaLancamentos").innerHTML = html;
-
       const recentes = [...resumo.lancamentosMes]
-        .sort((a, b) => b.data.localeCompare(a.data))
-        .slice(0, 8);
+        .sort((a,b) => b.data.localeCompare(a.data))
+        .slice(0,8);
 
       document.getElementById("tabelaRecentes").innerHTML = recentes.length
         ? recentes.map(linhaTabela).join("")
@@ -1280,8 +1539,8 @@
 
       gastos
         .filter(item => item.importancia === "impulso" || item.importancia === "arrependimento")
-        .sort((a, b) => Number(b.valor) - Number(a.valor))
-        .slice(0, 6)
+        .sort((a,b) => Number(b.valor) - Number(a.valor))
+        .slice(0,6)
         .forEach(item => {
           comprasRuins.push([
             item.importancia === "arrependimento" ? "danger" : "warn",
@@ -1293,7 +1552,7 @@
       Object.entries(resumo.gastosPorCategoria).forEach(([categoria, valor]) => {
         const limite = resumo.entradas ? resumo.entradas * 0.20 : resumo.gastos * 0.35;
 
-        if (["Jogo", "Delivery", "Lazer", "Roupa"].includes(categoria) && valor > limite && valor > 50) {
+        if (["Jogo","Delivery","Lazer","Roupa"].includes(categoria) && valor > limite && valor > 50) {
           comprasRuins.push([
             "danger",
             "Categoria perigosa: " + categoria,
@@ -1334,8 +1593,8 @@
     function renderizarTopGastos(resumo) {
       const top = resumo.lancamentosMes
         .filter(item => item.tipo === "gasto")
-        .sort((a, b) => Number(b.valor) - Number(a.valor))
-        .slice(0, 6);
+        .sort((a,b) => Number(b.valor) - Number(a.valor))
+        .slice(0,6);
 
       const caixa = document.getElementById("topGastos");
 
@@ -1362,77 +1621,6 @@
           <p>${escapar(texto)}</p>
         </div>
       `;
-    }
-
-    function salvarLancamento(evento) {
-      evento.preventDefault();
-
-      const id = document.getElementById("idLancamento").value || gerarId();
-
-      const lancamento = {
-        id,
-        tipo: document.getElementById("tipo").value,
-        valor: Number(document.getElementById("valor").value || 0),
-        descricao: document.getElementById("descricao").value.trim(),
-        categoria: document.getElementById("categoria").value,
-        data: document.getElementById("data").value,
-        importancia: document.getElementById("importancia").value,
-        pagamento: document.getElementById("pagamento").value
-      };
-
-      if (!lancamento.descricao || !lancamento.valor || !lancamento.data) {
-        aviso("Preencha descrição, valor e data.");
-        return;
-      }
-
-      const index = dados.lancamentos.findIndex(item => item.id === id);
-
-      if (index >= 0) {
-        dados.lancamentos[index] = lancamento;
-      } else {
-        dados.lancamentos.push(lancamento);
-      }
-
-      limparFormulario();
-      fecharModal();
-      aviso("Lançamento salvo com sucesso.");
-      renderizarTudo();
-    }
-
-    function limparFormulario() {
-      document.getElementById("idLancamento").value = "";
-      document.getElementById("tipo").value = "gasto";
-      document.getElementById("valor").value = "";
-      document.getElementById("descricao").value = "";
-      document.getElementById("categoria").value = "Outros";
-      document.getElementById("data").value = dataHoje();
-      document.getElementById("importancia").value = "essencial";
-      document.getElementById("pagamento").value = "Pix";
-    }
-
-    function editarLancamento(id) {
-      const item = dados.lancamentos.find(l => l.id === id);
-      if (!item) return;
-
-      document.getElementById("idLancamento").value = item.id;
-      document.getElementById("tipo").value = item.tipo;
-      document.getElementById("valor").value = item.valor;
-      document.getElementById("descricao").value = item.descricao;
-      document.getElementById("categoria").value = item.categoria;
-      document.getElementById("data").value = item.data;
-      document.getElementById("importancia").value = item.importancia;
-      document.getElementById("pagamento").value = item.pagamento || "Pix";
-
-      abrirJanela("lancamentos", document.querySelector(".menu button:nth-child(2)"));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function apagarLancamento(id) {
-      if (!confirm("Deseja apagar este lançamento?")) return;
-
-      dados.lancamentos = dados.lancamentos.filter(item => item.id !== id);
-      aviso("Lançamento apagado.");
-      renderizarTudo();
     }
 
     function processarTextoRapido() {
@@ -1482,7 +1670,7 @@
 
       let importancia = "essencial";
 
-      if (["Jogo", "Delivery", "Lazer", "Roupa"].includes(categoria)) {
+      if (["Jogo","Delivery","Lazer","Roupa"].includes(categoria)) {
         importancia = "impulso";
       }
 
@@ -1536,8 +1724,10 @@
     }
 
     function salvarConfiguracao() {
-      dados.config.limiteMensal = Number(document.getElementById("limiteMensal").value || 0);
-      dados.config.reservaDesejada = Number(document.getElementById("reservaDesejada").value || 0);
+      config.limiteMensal = Number(document.getElementById("limiteMensal").value || 0);
+      config.reservaDesejada = Number(document.getElementById("reservaDesejada").value || 0);
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+
       aviso("Configuração salva.");
       renderizarTudo();
     }
@@ -1557,138 +1747,126 @@
       }
     }
 
+    function destruirTodosGraficos() {
+      Object.keys(graficos).forEach(nome => destruirGrafico(nome));
+      graficos = {};
+    }
+
     function criarGraficoResumo(resumo) {
       destruirGrafico("resumo");
-
       const ctx = document.getElementById("graficoResumo");
 
+      if (!ctx) return;
+
       graficos.resumo = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: ["Entradas", "Gastos", "Saldo"],
-          datasets: [{
-            label: "Resumo do mês",
-            data: [resumo.entradas, resumo.gastos, resumo.saldo],
-            backgroundColor: [
-              "rgba(34,197,94,.75)",
-              "rgba(239,68,68,.75)",
-              "rgba(56,189,248,.75)"
-            ],
-            borderColor: [
-              "rgba(34,197,94,1)",
-              "rgba(239,68,68,1)",
-              "rgba(56,189,248,1)"
-            ],
-            borderWidth: 1,
-            borderRadius: 12
+        type:"bar",
+        data:{
+          labels:["Entradas","Gastos","Saldo"],
+          datasets:[{
+            label:"Resumo do mês",
+            data:[resumo.entradas,resumo.gastos,resumo.saldo],
+            backgroundColor:["rgba(34,197,94,.75)","rgba(239,68,68,.75)","rgba(56,189,248,.75)"],
+            borderRadius:12
           }]
         },
-        options: opcoesGrafico("R$")
+        options:opcoesGrafico("R$")
       });
     }
 
     function criarGraficoCategorias(resumo) {
       destruirGrafico("categorias");
+      const ctx = document.getElementById("graficoCategorias");
+
+      if (!ctx) return;
 
       const labels = Object.keys(resumo.gastosPorCategoria);
       const valores = Object.values(resumo.gastosPorCategoria);
 
-      const ctx = document.getElementById("graficoCategorias");
-
       graficos.categorias = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: labels.length ? labels : ["Sem gastos"],
-          datasets: [{
-            data: valores.length ? valores : [1],
-            backgroundColor: [
-              "rgba(56,189,248,.78)",
-              "rgba(239,68,68,.78)",
-              "rgba(245,158,11,.78)",
-              "rgba(34,197,94,.78)",
-              "rgba(168,85,247,.78)",
-              "rgba(99,102,241,.78)",
-              "rgba(20,184,166,.78)",
-              "rgba(251,113,133,.78)"
-            ],
-            borderColor: "rgba(255,255,255,.08)"
+        type:"doughnut",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            data:valores.length ? valores : [1],
+            backgroundColor:coresGraficos(),
+            borderColor:"rgba(255,255,255,.08)"
           }]
         },
-        options: opcoesPizza()
+        options:opcoesPizza()
       });
     }
 
     function criarGraficoDias(resumo) {
       destruirGrafico("dias");
+      const ctx = document.getElementById("graficoDias");
 
-      const dias = Object.keys(resumo.porDia).sort((a, b) => Number(a) - Number(b));
+      if (!ctx) return;
+
+      const dias = Object.keys(resumo.porDia).sort((a,b) => Number(a) - Number(b));
       const entradas = dias.map(dia => resumo.porDia[dia].entradas);
       const gastos = dias.map(dia => resumo.porDia[dia].gastos);
 
-      const ctx = document.getElementById("graficoDias");
-
       graficos.dias = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: dias.length ? dias : ["Hoje"],
-          datasets: [
+        type:"line",
+        data:{
+          labels:dias.length ? dias : ["Hoje"],
+          datasets:[
             {
-              label: "Entradas",
-              data: entradas.length ? entradas : [0],
-              borderColor: "rgba(34,197,94,1)",
-              backgroundColor: "rgba(34,197,94,.12)",
-              tension: .35,
-              fill: true
+              label:"Entradas",
+              data:entradas.length ? entradas : [0],
+              borderColor:"rgba(34,197,94,1)",
+              backgroundColor:"rgba(34,197,94,.12)",
+              tension:.35,
+              fill:true
             },
             {
-              label: "Gastos",
-              data: gastos.length ? gastos : [0],
-              borderColor: "rgba(239,68,68,1)",
-              backgroundColor: "rgba(239,68,68,.12)",
-              tension: .35,
-              fill: true
+              label:"Gastos",
+              data:gastos.length ? gastos : [0],
+              borderColor:"rgba(239,68,68,1)",
+              backgroundColor:"rgba(239,68,68,.12)",
+              tension:.35,
+              fill:true
             }
           ]
         },
-        options: opcoesGrafico("R$")
+        options:opcoesGrafico("R$")
       });
     }
 
     function criarGraficoImportancia(resumo) {
       destruirGrafico("importancia");
+      const ctx = document.getElementById("graficoImportancia");
+
+      if (!ctx) return;
 
       const labels = Object.keys(resumo.importancia);
       const valores = Object.values(resumo.importancia);
 
-      const ctx = document.getElementById("graficoImportancia");
-
       graficos.importancia = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels.length ? labels : ["Sem gastos"],
-          datasets: [{
-            label: "Valor por importância",
-            data: valores.length ? valores : [0],
-            backgroundColor: [
-              "rgba(34,197,94,.75)",
-              "rgba(56,189,248,.75)",
-              "rgba(245,158,11,.75)",
-              "rgba(239,68,68,.75)"
-            ],
-            borderRadius: 12
+        type:"bar",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            label:"Valor por importância",
+            data:valores.length ? valores : [0],
+            backgroundColor:["rgba(34,197,94,.75)","rgba(56,189,248,.75)","rgba(245,158,11,.75)","rgba(239,68,68,.75)"],
+            borderRadius:12
           }]
         },
-        options: opcoesGrafico("R$")
+        options:opcoesGrafico("R$")
       });
     }
 
     function criarGraficoSuspeitos(resumo) {
       destruirGrafico("suspeitos");
+      const ctx = document.getElementById("graficoSuspeitos");
+
+      if (!ctx) return;
 
       const suspeitos = {
-        impulso: 0,
-        arrependimento: 0,
-        outros: 0
+        impulso:0,
+        arrependimento:0,
+        outros:0
       };
 
       resumo.lancamentosMes
@@ -1699,87 +1877,86 @@
           else suspeitos.outros += Number(item.valor);
         });
 
-      const ctx = document.getElementById("graficoSuspeitos");
-
       graficos.suspeitos = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: ["Impulso", "Arrependimento", "Outros"],
-          datasets: [{
-            label: "Gastos suspeitos",
-            data: [suspeitos.impulso, suspeitos.arrependimento, suspeitos.outros],
-            backgroundColor: [
-              "rgba(245,158,11,.78)",
-              "rgba(239,68,68,.78)",
-              "rgba(56,189,248,.78)"
-            ],
-            borderRadius: 12
+        type:"bar",
+        data:{
+          labels:["Impulso","Arrependimento","Outros"],
+          datasets:[{
+            label:"Gastos suspeitos",
+            data:[suspeitos.impulso,suspeitos.arrependimento,suspeitos.outros],
+            backgroundColor:["rgba(245,158,11,.78)","rgba(239,68,68,.78)","rgba(56,189,248,.78)"],
+            borderRadius:12
           }]
         },
-        options: opcoesGrafico("R$")
+        options:opcoesGrafico("R$")
       });
     }
 
     function criarGraficoPizzaAnalise(resumo) {
       destruirGrafico("pizzaAnalise");
+      const ctx = document.getElementById("graficoPizzaAnalise");
+
+      if (!ctx) return;
 
       const labels = Object.keys(resumo.gastosPorCategoria);
       const valores = Object.values(resumo.gastosPorCategoria);
 
-      const ctx = document.getElementById("graficoPizzaAnalise");
-
       graficos.pizzaAnalise = new Chart(ctx, {
-        type: "pie",
-        data: {
-          labels: labels.length ? labels : ["Sem gastos"],
-          datasets: [{
-            data: valores.length ? valores : [1],
-            backgroundColor: [
-              "rgba(56,189,248,.78)",
-              "rgba(239,68,68,.78)",
-              "rgba(245,158,11,.78)",
-              "rgba(34,197,94,.78)",
-              "rgba(168,85,247,.78)",
-              "rgba(99,102,241,.78)",
-              "rgba(20,184,166,.78)",
-              "rgba(251,113,133,.78)"
-            ],
-            borderColor: "rgba(255,255,255,.08)"
+        type:"pie",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            data:valores.length ? valores : [1],
+            backgroundColor:coresGraficos(),
+            borderColor:"rgba(255,255,255,.08)"
           }]
         },
-        options: opcoesPizza()
+        options:opcoesPizza()
       });
+    }
+
+    function coresGraficos() {
+      return [
+        "rgba(56,189,248,.78)",
+        "rgba(239,68,68,.78)",
+        "rgba(245,158,11,.78)",
+        "rgba(34,197,94,.78)",
+        "rgba(168,85,247,.78)",
+        "rgba(99,102,241,.78)",
+        "rgba(20,184,166,.78)",
+        "rgba(251,113,133,.78)"
+      ];
     }
 
     function opcoesGrafico(prefixo) {
       return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: "#cbd5e1" }
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            labels:{ color:"#cbd5e1" }
           },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
+          tooltip:{
+            callbacks:{
+              label:function(context) {
                 return context.dataset.label + ": " + moeda(context.raw);
               }
             }
           }
         },
-        scales: {
-          x: {
-            ticks: { color: "#94a3b8" },
-            grid: { color: "rgba(255,255,255,.06)" }
+        scales:{
+          x:{
+            ticks:{ color:"#94a3b8" },
+            grid:{ color:"rgba(255,255,255,.06)" }
           },
-          y: {
-            ticks: {
-              color: "#94a3b8",
-              callback: function(value) {
+          y:{
+            ticks:{
+              color:"#94a3b8",
+              callback:function(value) {
                 return prefixo + " " + value;
               }
             },
-            grid: { color: "rgba(255,255,255,.06)" }
+            grid:{ color:"rgba(255,255,255,.06)" }
           }
         }
       };
@@ -1787,16 +1964,16 @@
 
     function opcoesPizza() {
       return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: { color: "#cbd5e1" }
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            position:"bottom",
+            labels:{ color:"#cbd5e1" }
           },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
+          tooltip:{
+            callbacks:{
+              label:function(context) {
                 return context.label + ": " + moeda(context.raw);
               }
             }
@@ -1805,88 +1982,24 @@
       };
     }
 
-    function abrirModal() {
-      const form = document.getElementById("formLancamento");
-      document.getElementById("formDentroModal").appendChild(form);
-      document.getElementById("modalLancamento").classList.add("active");
-    }
-
-    function fecharModal() {
-      const form = document.getElementById("formLancamento");
-      const cardOriginal = document.querySelector("#lancamentos .dashboard-grid .card:last-child");
-      cardOriginal.appendChild(form);
-      document.getElementById("modalLancamento").classList.remove("active");
-    }
-
     function exportarJSON() {
-      const arquivo = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
-      baixarArquivo(arquivo, "backup-deshbor-financeiro.json");
+      const arquivo = new Blob([JSON.stringify(lancamentos, null, 2)], { type:"application/json" });
+      baixarArquivo(arquivo, "backup-deshbor-supabase.json");
     }
 
     function exportarCSV() {
-      const linhas = [["data", "tipo", "descricao", "categoria", "importancia", "pagamento", "valor"]];
+      const linhas = [["data","tipo","descricao","categoria","importancia","pagamento","valor"]];
 
-      dados.lancamentos.forEach(item => {
-        linhas.push([
-          item.data,
-          item.tipo,
-          item.descricao,
-          item.categoria,
-          item.importancia,
-          item.pagamento,
-          item.valor
-        ]);
+      lancamentos.forEach(item => {
+        linhas.push([item.data,item.tipo,item.descricao,item.categoria,item.importancia,item.pagamento,item.valor]);
       });
 
       const csv = linhas.map(linha =>
-        linha.map(campo => `"${String(campo).replaceAll('"', '""')}"`).join(";")
+        linha.map(campo => `"${String(campo ?? "").replaceAll('"', '""')}"`).join(";")
       ).join("\n");
 
-      const arquivo = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      baixarArquivo(arquivo, "lancamentos-deshbor.csv");
-    }
-
-    function importarJSON(evento) {
-      const arquivo = evento.target.files[0];
-      if (!arquivo) return;
-
-      const leitor = new FileReader();
-
-      leitor.onload = function() {
-        try {
-          const importado = JSON.parse(leitor.result);
-
-          if (!importado.lancamentos || !importado.config) {
-            aviso("Arquivo inválido.");
-            return;
-          }
-
-          dados = importado;
-          aviso("Backup importado com sucesso.");
-          renderizarTudo();
-        } catch (erro) {
-          aviso("Erro ao importar backup.");
-        }
-      };
-
-      leitor.readAsText(arquivo);
-    }
-
-    function apagarTudo() {
-      if (!confirm("Tem certeza que deseja apagar todos os dados?")) return;
-
-      localStorage.removeItem(CHAVE);
-
-      dados = {
-        lancamentos: [],
-        config: {
-          limiteMensal: 0,
-          reservaDesejada: 0
-        }
-      };
-
-      aviso("Todos os dados foram apagados.");
-      carregar();
+      const arquivo = new Blob([csv], { type:"text/csv;charset=utf-8" });
+      baixarArquivo(arquivo, "lancamentos-deshbor-supabase.csv");
     }
 
     function baixarArquivo(blob, nome) {
@@ -1897,6 +2010,11 @@
       URL.revokeObjectURL(link.href);
     }
 
+    function copiarSQL() {
+      navigator.clipboard.writeText(SQL_NECESSARIO);
+      aviso("SQL copiado.");
+    }
+
     function aviso(texto) {
       const toast = document.getElementById("toast");
       toast.textContent = texto;
@@ -1904,26 +2022,22 @@
 
       setTimeout(() => {
         toast.classList.remove("show");
-      }, 2800);
+      }, 3200);
     }
 
     function moeda(valor) {
       return Number(valor || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
+        style:"currency",
+        currency:"BRL"
       });
     }
 
     function dataHoje() {
-      return new Date().toISOString().slice(0, 10);
+      return new Date().toISOString().slice(0,10);
     }
 
     function mesAtual() {
-      return new Date().toISOString().slice(0, 7);
-    }
-
-    function gerarId() {
-      return Date.now().toString(36) + Math.random().toString(36).slice(2);
+      return new Date().toISOString().slice(0,7);
     }
 
     function formatarData(data) {
@@ -1939,18 +2053,18 @@
     function escapar(texto) {
       return String(texto ?? "").replace(/[&<>"']/g, function(letra) {
         return {
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#039;"
+          "&":"&amp;",
+          "<":"&lt;",
+          ">":"&gt;",
+          '"':"&quot;",
+          "'":"&#039;"
         }[letra];
       });
     }
 
     document.getElementById("formLancamento").addEventListener("submit", salvarLancamento);
 
-    carregar();
+    iniciar();
   </script>
 </body>
 </html>
