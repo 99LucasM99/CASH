@@ -446,6 +446,2193 @@
           </div>
 
           <div class="card metric-card">
+            <div class="metric-title">CDB BB reservado</div>
+            <div class="metric-value blue-text" id="cdbAplicadoCard">R$ 0,00</div>
+            <div class="metric-hint">Valor separado na caixa CDB.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Saldo livre</div>
+            <div class="metric-value green-text" id="saldoLivreCard">R$ 0,00</div>
+            <div class="metric-hint">Saldo acumulado menos CDB.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Rendimento CDB</div>
+            <div class="metric-value green-text" id="cdbRendimentoCard">R$ 0,00</div>
+            <div class="metric-hint">Estimativa líquida no prazo.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Nível de risco</div>
+            <div class="metric-value yellow-text" id="nivelRisco">Baixo</div>
+            <div class="metric-hint" id="textoRisco">Continue registrando seus gastos.</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>Visão geral do mês</h3>
+            <p class="desc">Compara entradas, gastos e saldo.</p>
+            <div class="chart-box large"><canvas id="graficoResumo"></canvas></div>
+          </div>
+
+          <div class="card">
+            <h3>Uso do dinheiro</h3>
+            <p class="desc">Quanto do dinheiro recebido já foi comprometido.</p>
+            <div class="progress"><div class="bar" id="barraUso"></div></div>
+            <p class="desc" id="textoUso" style="margin-top:12px">0% usado.</p>
+            <div class="analysis-list" id="alertasDeshbor"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Caixa CDB Banco do Brasil — visão do investimento</h3>
+          <p class="desc">Aqui é somente visualização: valor reservado, rendimento estimado, saldo livre e alerta. Para alterar, use a caixa CDB na aba Lançamentos.</p>
+          <div class="analysis-list" id="resultadoCDBDashboard"></div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="card">
+            <h3>Gastos por categoria</h3>
+            <p class="desc">Veja onde seu dinheiro está indo.</p>
+            <div class="chart-box"><canvas id="graficoCategorias"></canvas></div>
+          </div>
+
+          <div class="card">
+            <h3>Entradas x gastos por dia</h3>
+            <p class="desc">Ajuda a perceber em quais dias você gasta mais.</p>
+            <div class="chart-box"><canvas id="graficoDias"></canvas></div>
+          </div>
+
+          <div class="card">
+            <h3>Tipo de compra</h3>
+            <p class="desc">Essencial, útil, impulso ou arrependimento.</p>
+            <div class="chart-box"><canvas id="graficoImportancia"></canvas></div>
+          </div>
+
+          <div class="card">
+            <h3>Top gastos do mês</h3>
+            <p class="desc">Maiores gastos para você analisar.</p>
+            <div class="analysis-list" id="topGastos"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Últimos lançamentos</h3>
+          <p class="desc">Registros mais recentes do mês selecionado.</p>
+          <div style="overflow:auto;margin-top:12px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Importância</th>
+                  <th>Tipo</th>
+                  <th>Valor</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaRecentes"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="lancamentos" class="section">
+        <div class="card">
+          <h3>Lançamento rápido</h3>
+          <p class="desc">Digite do jeito que você fala. O sistema salva direto no Supabase.</p>
+
+          <div class="quick-launch">
+            <div>
+              <label>Frase</label>
+              <input id="textoRapido" placeholder="Ex: salário 2500 / mercado 30 / jogo 40 / recebi bico 150" />
+            </div>
+            <button id="btnRapido" class="btn primary" onclick="salvarRapido()">Salvar rápido</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Caixa CDB Banco do Brasil</h3>
+          <p class="desc">Aqui você define quanto do saldo acumulado quer separar para simular no CDB. O DESHBOR fica só para visualizar.</p>
+
+          <div class="form-grid">
+            <div>
+              <label>Valor para colocar no CDB</label>
+              <input id="cdbValor" inputmode="decimal" placeholder="Ex: 4000" />
+            </div>
+
+            <div>
+              <label>Data da aplicação</label>
+              <input id="cdbData" type="date" />
+            </div>
+
+            <div>
+              <label>CDI ao ano (%)</label>
+              <input id="cdbCdiAnual" inputmode="decimal" value="14,40" />
+            </div>
+
+            <div>
+              <label>Percentual do CDI (%)</label>
+              <input id="cdbPercentual" inputmode="decimal" value="100" />
+            </div>
+
+            <div>
+              <label>Prazo da simulação (meses)</label>
+              <input id="cdbPrazo" type="number" min="1" max="120" value="12" />
+            </div>
+
+            <div>
+              <label>Modo</label>
+              <select id="cdbModo">
+                <option value="liquido">Mostrar líquido com IR</option>
+                <option value="bruto">Mostrar bruto sem IR</option>
+              </select>
+            </div>
+
+            <div class="full" style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn primary" type="button" onclick="usarSaldoNoCDB()">Usar saldo acumulado</button>
+              <button class="btn green" type="button" onclick="salvarCDB()">Salvar caixa CDB</button>
+              <button class="btn" type="button" onclick="renderizarCDB(calcularResumo())">Simular</button>
+              <button class="btn red" type="button" onclick="limparCDB()">Limpar CDB</button>
+            </div>
+          </div>
+
+          <div class="analysis-list" id="resultadoCDB"></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>Todos os lançamentos</h3>
+            <p class="desc">Você pode editar, apagar, marcar arrependimento ou duplicar lançamento.</p>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+              <input id="pesquisa" placeholder="Pesquisar por descrição ou categoria" oninput="renderizarTudo()" />
+              <select id="filtroTipo" onchange="renderizarTudo()" style="max-width:180px">
+                <option value="todos">Todos</option>
+                <option value="entrada">Entradas</option>
+                <option value="gasto">Gastos</option>
+              </select>
+            </div>
+
+            <div style="overflow:auto;margin-top:12px">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Importância</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaLancamentos"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 id="tituloFormulario">Cadastro manual</h3>
+            <p class="desc" id="subtituloFormulario">Use quando quiser registrar com mais detalhe.</p>
+            <div id="avisoEdicao" class="edit-banner">Modo edição ativo. Altere os campos e clique em atualizar.</div>
+
+            <form id="formLancamento" class="form-grid">
+              <input type="hidden" id="idLancamento" />
+
+              <div>
+                <label>Tipo</label>
+                <select id="tipo">
+                  <option value="gasto">Gasto</option>
+                  <option value="entrada">Entrada</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Valor</label>
+                <input id="valor" inputmode="decimal" placeholder="Ex: 35,50" required />
+              </div>
+
+              <div class="full">
+                <label>Descrição</label>
+                <input id="descricao" placeholder="Ex: Mercado, jogo, salário, lanche..." required />
+              </div>
+
+              <div>
+                <label>Categoria</label>
+                <select id="categoria">
+                  <option>Salário</option>
+                  <option>Mercado</option>
+                  <option>Jogo</option>
+                  <option>Delivery</option>
+                  <option>Transporte</option>
+                  <option>Casa</option>
+                  <option>Internet</option>
+                  <option>Saúde</option>
+                  <option>Lazer</option>
+                  <option>Roupa</option>
+                  <option>Educação</option>
+                  <option>Bico</option>
+                  <option>Outros</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Data</label>
+                <input id="data" type="date" required />
+              </div>
+
+              <div>
+                <label>Importância</label>
+                <select id="importancia">
+                  <option value="essencial">Essencial</option>
+                  <option value="util">Útil</option>
+                  <option value="impulso">Impulso</option>
+                  <option value="arrependimento">Arrependimento</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Pagamento</label>
+                <select id="pagamento">
+                  <option>Pix</option>
+                  <option>Débito</option>
+                  <option>Crédito</option>
+                  <option>Dinheiro</option>
+                  <option>Boleto</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Parcelas</label>
+                <input id="parcelas" type="number" min="1" max="60" value="1" />
+              </div>
+
+              <div>
+                <label>Valor por parcela</label>
+                <input id="valorParcela" disabled placeholder="Automático" />
+              </div>
+
+              <div class="full">
+                <button id="btnSalvar" class="btn green" style="width:100%" type="submit">Salvar no Supabase</button>
+              </div>
+
+              <div class="full">
+                <button class="btn" style="width:100%" type="button" onclick="limparFormulario()">Cancelar / limpar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="analise" class="section">
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>O que talvez você não deveria ter comprado</h3>
+            <p class="desc">Analisa compras por impulso, arrependimento e categorias que pesaram demais.</p>
+            <div class="analysis-list" id="comprasRuins"></div>
+          </div>
+
+          <div class="card">
+            <h3>Como contornar a situação</h3>
+            <p class="desc">Sugestões práticas para recuperar o dinheiro ou evitar repetir o erro.</p>
+            <div class="analysis-list" id="planoContorno"></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="card">
+            <h3>Relatório mensal</h3>
+            <p class="desc">Resumo automático para entender seu mês.</p>
+            <div class="analysis-list" id="relatorioMensal"></div>
+          </div>
+
+          <div class="card">
+            <h3>Distribuição de gastos</h3>
+            <p class="desc">Peso de cada categoria no total de gastos.</p>
+            <div class="chart-box"><canvas id="graficoPizzaAnalise"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="config" class="section">
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>Configurações locais</h3>
+            <p class="desc">Essas preferências ficam salvas neste navegador.</p>
+
+            <div class="form-grid">
+              <div>
+                <label>Limite de gasto mensal desejado</label>
+                <input id="limiteMensal" inputmode="decimal" placeholder="Ex: 1500" />
+              </div>
+
+              <div>
+                <label>Reserva desejada no mês</label>
+                <input id="reservaDesejada" inputmode="decimal" placeholder="Ex: 300" />
+              </div>
+
+              <div class="full">
+                <button class="btn primary" onclick="salvarConfiguracao()">Salvar configuração</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Backup</h3>
+            <p class="desc">Exporte seus dados caso queira guardar uma cópia fora do Supabase.</p>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+              <button class="btn green" onclick="exportarJSON()">Exportar backup</button>
+              <button class="btn" onclick="exportarCSV()">Exportar CSV</button>
+              <button class="btn primary" onclick="carregarLancamentos()">Recarregar Supabase</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>SQL necessário no Supabase</h3>
+          <p class="desc">Use somente se precisar recriar a tabela.</p>
+          <div class="sql-box" id="sqlBox"></div>
+          <button class="btn primary" style="margin-top:12px" onclick="copiarSQL()">Copiar SQL</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SUPABASE_URL = "https://qwoimelbxvxyjkncuwzp.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_w0tWZGjf4yLiQbn-paSfbA_ntx35b_h";
+    const TABLE = "financas_lancamentos";
+    const CONFIG_KEY = "deshbor_config_local_v4";
+
+    const SQL_NECESSARIO = `create table if not exists public.financas_lancamentos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  tipo text not null check (tipo in ('entrada', 'gasto')),
+  valor numeric(12,2) not null check (valor >= 0),
+  descricao text not null,
+  categoria text not null,
+  data date not null default current_date,
+  importancia text not null default 'essencial' check (importancia in ('essencial', 'util', 'impulso', 'arrependimento')),
+  pagamento text default 'Pix',
+  created_at timestamptz not null default now()
+);
+
+alter table public.financas_lancamentos enable row level security;
+
+drop policy if exists "Ler meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Inserir meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Atualizar meus lancamentos" on public.financas_lancamentos;
+drop policy if exists "Apagar meus lancamentos" on public.financas_lancamentos;
+
+create policy "Ler meus lancamentos"
+on public.financas_lancamentos
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Inserir meus lancamentos"
+on public.financas_lancamentos
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Atualizar meus lancamentos"
+on public.financas_lancamentos
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Apagar meus lancamentos"
+on public.financas_lancamentos
+for delete
+to authenticated
+using (auth.uid() = user_id);`;
+
+    let supabaseClient = null;
+    let usuarioAtual = null;
+    let lancamentos = [];
+    let historicoAteFim = [];
+    let periodoAtual = { inicio:"", fim:"" };
+    let graficos = {};
+    let config = { limiteMensal:0, reservaDesejada:0 };
+    let cdb = { valorAplicado:0, dataAplicacao:dataHoje(), cdiAnual:14.40, percentualCdi:100, prazoMeses:12, modo:"liquido" };
+
+    const $ = id => document.getElementById(id);
+
+    iniciar();
+
+    function iniciar(){
+      try{
+        if($("sqlBox")) $("sqlBox").textContent = SQL_NECESSARIO;
+        if($("filtroMes")) $("filtroMes").value = mesAtual();
+        if($("data")) $("data").value = dataHoje();
+
+        carregarConfig();
+        carregarCDB();
+
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth:{
+            persistSession:true,
+            autoRefreshToken:true,
+            detectSessionInUrl:true
+          }
+        });
+
+        if($("loginStatus")) $("loginStatus").textContent = "Supabase configurado. Entrando na sessão...";
+
+        supabaseClient.auth.getSession().then(({ data, error }) => {
+          if(error){
+            if($("loginStatus")) $("loginStatus").textContent = "Erro ao verificar sessão: " + traduzErro(error.message);
+            mostrarLogin();
+            return;
+          }
+
+          if(data.session){
+            usuarioAtual = data.session.user;
+            mostrarApp();
+            carregarLancamentos();
+          }else{
+            mostrarLogin();
+          }
+        }).catch(err => {
+          if($("loginStatus")) $("loginStatus").textContent = "Falha ao conectar no Supabase. Confira internet, URL e chave.";
+          aviso("Falha ao conectar no Supabase: " + (err.message || err));
+        });
+
+        supabaseClient.auth.onAuthStateChange((evento, sessao) => {
+          usuarioAtual = sessao?.user || null;
+
+          if(usuarioAtual){
+            mostrarApp();
+            carregarLancamentos();
+          }else if(evento !== "INITIAL_SESSION"){
+            mostrarLogin();
+          }
+        });
+
+        if($("formLancamento")) $("formLancamento").addEventListener("submit", salvarLancamento);
+        if($("valor")) $("valor").addEventListener("input", atualizarValorParcela);
+        if($("parcelas")) $("parcelas").addEventListener("input", atualizarValorParcela);
+
+        ["cdbValor","cdbData","cdbCdiAnual","cdbPercentual","cdbPrazo","cdbModo"].forEach(id => {
+          const campo = $(id);
+          if(campo){
+            campo.addEventListener("input", () => renderizarCDB(calcularResumo()));
+            campo.addEventListener("change", () => renderizarCDB(calcularResumo()));
+          }
+        });
+
+        document.addEventListener("click", tratarCliqueTabela);
+
+        if($("loginSenha")){
+          $("loginSenha").addEventListener("keydown", e => {
+            if(e.key === "Enter") entrar();
+          });
+        }
+      }catch(err){
+        if($("loginStatus")) $("loginStatus").textContent = "Erro no carregamento: " + (err.message || err);
+        aviso("Erro no carregamento: " + (err.message || err));
+      }
+    }
+
+    async function cadastrar(){
+      const email = $("loginEmail").value.trim();
+      const senha = $("loginSenha").value;
+
+      if(!validarLogin(email, senha)) return;
+      setLoginLoading(true);
+
+      const { data, error } = await supabaseClient.auth.signUp({ email, password: senha });
+      setLoginLoading(false);
+
+      if(error){
+        aviso(traduzErro(error.message));
+        return;
+      }
+
+      if(data.session){
+        aviso("Conta criada e login realizado.");
+      }else{
+        aviso("Conta criada. Se pedir confirmação, verifique seu e-mail.");
+      }
+    }
+
+    async function entrar(){
+      const email = $("loginEmail").value.trim();
+      const senha = $("loginSenha").value;
+
+      if(!validarLogin(email, senha)) return;
+      setLoginLoading(true);
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+      setLoginLoading(false);
+
+      if(error){
+        aviso(traduzErro(error.message));
+        return;
+      }
+
+      aviso("Login realizado.");
+    }
+
+    async function recuperarSenha(){
+      const email = $("loginEmail").value.trim();
+
+      if(!email || !email.includes("@")){
+        aviso("Digite seu e-mail primeiro.");
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: location.href
+      });
+
+      if(error){
+        aviso(traduzErro(error.message));
+        return;
+      }
+
+      aviso("Enviei o link de recuperação para seu e-mail.");
+    }
+
+    async function sair(){
+      await supabaseClient.auth.signOut();
+      lancamentos = [];
+      destruirTodosGraficos();
+      mostrarLogin();
+    }
+
+    function validarLogin(email, senha){
+      if(!email || !email.includes("@")){
+        aviso("Digite um e-mail válido.");
+        return false;
+      }
+
+      if(!senha || senha.length < 6){
+        aviso("A senha precisa ter pelo menos 6 caracteres.");
+        return false;
+      }
+
+      return true;
+    }
+
+    function setLoginLoading(ativo){
+      $("btnEntrar").disabled = ativo;
+      $("btnCadastrar").disabled = ativo;
+      $("btnEntrar").textContent = ativo ? "Aguarde..." : "Entrar";
+      $("btnCadastrar").textContent = ativo ? "Aguarde..." : "Criar conta";
+    }
+
+    function mostrarApp(){
+      $("loginScreen").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      $("emailUsuario").textContent = usuarioAtual?.email || "Usuário logado";
+    }
+
+    function mostrarLogin(){
+      $("loginScreen").classList.remove("hidden");
+      $("app").classList.add("hidden");
+      if($("loginStatus")) $("loginStatus").textContent = "Supabase configurado. Entre ou crie sua conta.";
+    }
+
+    async function carregarLancamentos(){
+      if(!usuarioAtual) return;
+
+      const mes = $("filtroMes").value || mesAtual();
+      const { inicio, fim } = intervaloMes(mes);
+      periodoAtual = { inicio, fim };
+
+      const consultaMes = supabaseClient
+        .from(TABLE)
+        .select("*")
+        .gte("data", inicio)
+        .lte("data", fim)
+        .order("data", { ascending:false })
+        .order("created_at", { ascending:false });
+
+      const consultaHistorico = supabaseClient
+        .from(TABLE)
+        .select("*")
+        .lte("data", fim)
+        .order("data", { ascending:false });
+
+      const [resMes, resHistorico] = await Promise.all([consultaMes, consultaHistorico]);
+
+      if(resMes.error){
+        aviso("Erro ao carregar: " + traduzErro(resMes.error.message));
+        return;
+      }
+
+      if(resHistorico.error){
+        aviso("Erro ao carregar histórico: " + traduzErro(resHistorico.error.message));
+        historicoAteFim = resMes.data || [];
+      }else{
+        historicoAteFim = resHistorico.data || [];
+      }
+
+      lancamentos = resMes.data || [];
+      renderizarTudo();
+    }
+
+    async function salvarLancamento(evento){
+      evento.preventDefault();
+
+      if(!usuarioAtual){
+        aviso("Faça login primeiro.");
+        return;
+      }
+
+      const id = $("idLancamento").value;
+      const item = lerFormulario();
+
+      if(!item) return;
+
+      setSalvarLoading(true);
+
+      let resposta;
+
+      if(id){
+        resposta = await supabaseClient
+          .from(TABLE)
+          .update(item)
+          .eq("id", id)
+          .select()
+          .single();
+      }else{
+        const parcelas = Math.max(1, Number($("parcelas").value || 1));
+
+        if(item.tipo === "gasto" && parcelas > 1){
+          const valorParcela = arredondar(item.valor / parcelas);
+
+          const lista = Array.from({ length: parcelas }, (_, index) => ({
+            ...item,
+            valor: valorParcela,
+            data: adicionarMeses(item.data, index),
+            descricao: `${item.descricao} (${index + 1}/${parcelas})`
+          }));
+
+          resposta = await supabaseClient.from(TABLE).insert(lista).select();
+        }else{
+          resposta = await supabaseClient.from(TABLE).insert(item).select().single();
+        }
+      }
+
+      setSalvarLoading(false);
+
+      if(resposta.error){
+        aviso("Erro ao salvar: " + traduzErro(resposta.error.message));
+        return;
+      }
+
+      const mensagem = id ? "Lançamento atualizado." : "Lançamento salvo.";
+      limparFormulario();
+      aviso(mensagem);
+      await carregarLancamentos();
+    }
+
+    async function salvarRapido(){
+      if(!usuarioAtual){
+        aviso("Faça login primeiro.");
+        return;
+      }
+
+      const item = interpretarTexto($("textoRapido").value);
+
+      if(!item) return;
+
+      $("btnRapido").disabled = true;
+      $("btnRapido").textContent = "Salvando...";
+
+      const { error } = await supabaseClient.from(TABLE).insert(item);
+
+      $("btnRapido").disabled = false;
+      $("btnRapido").textContent = "Salvar rápido";
+
+      if(error){
+        aviso("Erro ao salvar: " + traduzErro(error.message));
+        return;
+      }
+
+      $("textoRapido").value = "";
+      aviso("Lançamento rápido salvo.");
+      await carregarLancamentos();
+    }
+
+    function tratarCliqueTabela(evento){
+      const botao = evento.target.closest("[data-action]");
+      if(!botao) return;
+
+      const acao = botao.dataset.action;
+      const id = botao.dataset.id;
+
+      if(!id) return;
+
+      if(acao === "editar") editarLancamento(id);
+      if(acao === "apagar") apagarLancamento(id);
+      if(acao === "arrependimento") marcarArrependimento(id);
+      if(acao === "duplicar") duplicarLancamento(id);
+    }
+
+    async function editarLancamento(id){
+      let item = lancamentos.find(l => l.id === id);
+
+      if(!item){
+        const { data, error } = await supabaseClient.from(TABLE).select("*").eq("id", id).single();
+
+        if(error){
+          aviso("Não consegui localizar esse lançamento.");
+          return;
+        }
+
+        item = data;
+      }
+
+      $("idLancamento").value = item.id;
+      $("tipo").value = item.tipo;
+      $("valor").value = String(item.valor).replace(".", ",");
+      $("descricao").value = item.descricao || "";
+      $("categoria").value = item.categoria || "Outros";
+      $("data").value = item.data || dataHoje();
+      $("importancia").value = item.importancia || "essencial";
+      $("pagamento").value = item.pagamento || "Pix";
+      $("parcelas").value = 1;
+      $("parcelas").disabled = true;
+
+      $("tituloFormulario").textContent = "Editar lançamento";
+      $("subtituloFormulario").textContent = "Altere os campos e clique em atualizar.";
+      $("btnSalvar").textContent = "Atualizar lançamento";
+      $("avisoEdicao").classList.add("show");
+
+      atualizarValorParcela();
+      abrirJanela("lancamentos", document.querySelector(".menu button:nth-child(2)"));
+      setTimeout(() => $("formLancamento").scrollIntoView({ behavior:"smooth", block:"start" }), 120);
+    }
+
+    async function apagarLancamento(id){
+      if(!confirm("Deseja apagar este lançamento?")) return;
+
+      const { error } = await supabaseClient.from(TABLE).delete().eq("id", id);
+
+      if(error){
+        aviso("Erro ao apagar: " + traduzErro(error.message));
+        return;
+      }
+
+      aviso("Lançamento apagado.");
+      await carregarLancamentos();
+    }
+
+    async function marcarArrependimento(id){
+      const { error } = await supabaseClient
+        .from(TABLE)
+        .update({ importancia:"arrependimento" })
+        .eq("id", id);
+
+      if(error){
+        aviso("Erro ao marcar: " + traduzErro(error.message));
+        return;
+      }
+
+      aviso("Marcado como arrependimento.");
+      await carregarLancamentos();
+    }
+
+    async function duplicarLancamento(id){
+      const item = lancamentos.find(l => l.id === id);
+
+      if(!item){
+        aviso("Não consegui duplicar esse lançamento.");
+        return;
+      }
+
+      const novo = {
+        tipo:item.tipo,
+        valor:Number(item.valor),
+        descricao:item.descricao + " - cópia",
+        categoria:item.categoria,
+        data:dataHoje(),
+        importancia:item.importancia,
+        pagamento:item.pagamento || "Pix"
+      };
+
+      const { error } = await supabaseClient.from(TABLE).insert(novo);
+
+      if(error){
+        aviso("Erro ao duplicar: " + traduzErro(error.message));
+        return;
+      }
+
+      aviso("Lançamento duplicado para hoje.");
+      await carregarLancamentos();
+    }
+
+    function lerFormulario(){
+      const valor = paraNumero($("valor").value);
+
+      const item = {
+        tipo:$("tipo").value,
+        valor,
+        descricao:$("descricao").value.trim(),
+        categoria:$("categoria").value,
+        data:$("data").value,
+        importancia:$("importancia").value,
+        pagamento:$("pagamento").value
+      };
+
+      if(!item.descricao){
+        aviso("Digite a descrição.");
+        return null;
+      }
+
+      if(!valor || valor <= 0){
+        aviso("Digite um valor maior que zero.");
+        return null;
+      }
+
+      if(!item.data){
+        aviso("Escolha a data.");
+        return null;
+      }
+
+      return item;
+    }
+
+    function interpretarTexto(textoOriginal){
+      const texto = textoOriginal.trim();
+
+      if(!texto){
+        aviso("Digite uma frase primeiro.");
+        return null;
+      }
+
+      if(/^r?\$?\s*\d+[,.]?\d*\s*$/i.test(texto)){
+        aviso("Digite também o motivo. Exemplo: salário 4000 ou mercado 40. Só número não salva.");
+        return null;
+      }
+
+      const normalizado = texto.toLowerCase();
+      const valorEncontrado = normalizado.match(/(?:r\$\s*)?(\d+(?:[,.]\d{1,2})?)/);
+
+      if(!valorEncontrado){
+        aviso("Não encontrei o valor. Exemplo: mercado 30");
+        return null;
+      }
+
+      const valor = paraNumero(valorEncontrado[1]);
+      const entrada = /(sal[aá]rio|recebi|ganhei|renda|bico|pix recebido|pagamento|freela|extra)/i.test(normalizado);
+      const tipo = entrada ? "entrada" : "gasto";
+      const categoria = detectarCategoria(normalizado);
+      let importancia = tipo === "entrada" ? "essencial" : "essencial";
+
+      if(["Jogo","Delivery","Lazer","Roupa"].includes(categoria)) importancia = "impulso";
+
+      let descricao = texto
+        .replace(valorEncontrado[0], "")
+        .replace(/reais|real|rs|r\$|comprei|gastei|paguei|recebi|ganhei|sal[aá]rio|no|na|de|em/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if(!descricao) descricao = categoria;
+
+      return {
+        tipo,
+        valor,
+        descricao:primeiraMaiuscula(descricao),
+        categoria,
+        data:dataHoje(),
+        importancia,
+        pagamento:"Pix"
+      };
+    }
+
+    function detectarCategoria(texto){
+      const mapa = [
+        ["Salário", /sal[aá]rio|pagamento/],
+        ["Mercado", /mercado|supermercado|feira|comida|alimento|padaria/],
+        ["Jogo", /jogo|game|free fire|steam|xbox|playstation|psn/],
+        ["Delivery", /delivery|ifood|lanche|pizza|hamb[uú]rguer/],
+        ["Transporte", /uber|99|gasolina|combust[ií]vel|ônibus|onibus|moto|carro/],
+        ["Casa", /casa|aluguel|energia|luz|água|agua|gás|gas/],
+        ["Internet", /internet|wifi|fibra|telefone|celular/],
+        ["Saúde", /sa[uú]de|farm[aá]cia|rem[eé]dio|consulta/],
+        ["Lazer", /lazer|cinema|bar|praia|show|festa/],
+        ["Roupa", /roupa|camisa|t[eê]nis|cal[cç]a|bermuda/],
+        ["Educação", /curso|livro|estudo|faculdade|escola/],
+        ["Bico", /bico|freela|servi[cç]o|extra/]
+      ];
+
+      for(const [categoria, rx] of mapa){
+        if(rx.test(texto)) return categoria;
+      }
+
+      return "Outros";
+    }
+
+    function limparFormulario(){
+      $("idLancamento").value = "";
+      $("tipo").value = "gasto";
+      $("valor").value = "";
+      $("descricao").value = "";
+      $("categoria").value = "Outros";
+      $("data").value = dataHoje();
+      $("importancia").value = "essencial";
+      $("pagamento").value = "Pix";
+      $("parcelas").value = 1;
+      $("parcelas").disabled = false;
+      $("valorParcela").value = "";
+
+      $("tituloFormulario").textContent = "Cadastro manual";
+      $("subtituloFormulario").textContent = "Use quando quiser registrar com mais detalhe.";
+      $("btnSalvar").textContent = "Salvar no Supabase";
+      $("avisoEdicao").classList.remove("show");
+    }
+
+    function setSalvarLoading(ativo){
+      $("btnSalvar").disabled = ativo;
+      $("btnSalvar").textContent = ativo ? "Salvando..." : ($("idLancamento").value ? "Atualizar lançamento" : "Salvar no Supabase");
+    }
+
+    function atualizarValorParcela(){
+      const valor = paraNumero($("valor").value);
+      const parcelas = Math.max(1, Number($("parcelas").value || 1));
+
+      if(valor && parcelas > 1){
+        $("valorParcela").value = moeda(valor / parcelas);
+      }else{
+        $("valorParcela").value = "";
+      }
+    }
+
+    function abrirJanela(id, botao){
+      document.querySelectorAll(".section").forEach(secao => secao.classList.remove("active"));
+      document.querySelectorAll(".menu button").forEach(btn => btn.classList.remove("active"));
+
+      $(id).classList.add("active");
+      botao.classList.add("active");
+
+      const titulos = {
+        deshbor:["DESHBOR","Resumo visual do seu dinheiro, gastos, entradas e riscos."],
+        lancamentos:["Lançamentos","Cadastre salário, compras, mercado, jogos, delivery e outros gastos."],
+        analise:["Análise financeira","Veja o que não deveria ter comprado e como contornar."],
+        config:["Configuração","Ajuste limite mensal, backup e SQL do Supabase."]
+      };
+
+      $("tituloPagina").textContent = titulos[id][0];
+      $("subtituloPagina").textContent = titulos[id][1];
+
+      setTimeout(renderizarTudo, 80);
+    }
+
+    function renderizarTudo(){
+      const resumo = calcularResumo();
+      renderizarCards(resumo);
+      renderizarTabelas();
+      renderizarAlertas(resumo);
+      renderizarAnalise(resumo);
+      renderizarCDB(resumo);
+      renderizarGraficos(resumo);
+    }
+
+    function calcularResumo(){
+      const entradas = lancamentos
+        .filter(item => item.tipo === "entrada")
+        .reduce((total, item) => total + Number(item.valor), 0);
+
+      const gastos = lancamentos
+        .filter(item => item.tipo === "gasto")
+        .reduce((total, item) => total + Number(item.valor), 0);
+
+      const saldo = entradas - gastos;
+      const gastosPorCategoria = {};
+      const importancia = {};
+      const porDia = {};
+
+      lancamentos.forEach(item => {
+        const valor = Number(item.valor);
+        const dia = item.data.slice(8, 10);
+
+        if(!porDia[dia]) porDia[dia] = { entradas:0, gastos:0 };
+
+        if(item.tipo === "entrada"){
+          porDia[dia].entradas += valor;
+        }else{
+          porDia[dia].gastos += valor;
+          gastosPorCategoria[item.categoria] = (gastosPorCategoria[item.categoria] || 0) + valor;
+          importancia[item.importancia] = (importancia[item.importancia] || 0) + valor;
+        }
+      });
+
+      const historico = historicoAteFim.length ? historicoAteFim : lancamentos;
+
+      const saldoAcumulado = historico.reduce((total, item) => {
+        const valor = Number(item.valor || 0);
+        return total + (item.tipo === "entrada" ? valor : -valor);
+      }, 0);
+
+      const saldoAnterior = historico
+        .filter(item => periodoAtual.inicio && item.data < periodoAtual.inicio)
+        .reduce((total, item) => {
+          const valor = Number(item.valor || 0);
+          return total + (item.tipo === "entrada" ? valor : -valor);
+        }, 0);
+
+      const saldoLivre = saldoAcumulado - Number(cdb.valorAplicado || 0);
+      const base = (saldoAnterior + entradas) || entradas || config.limiteMensal || 0;
+      const percentualUso = base > 0 ? (gastos / base) * 100 : 0;
+
+      return {
+        entradas,
+        gastos,
+        saldo,
+        saldoAnterior,
+        saldoAcumulado,
+        saldoLivre,
+        gastosPorCategoria,
+        importancia,
+        porDia,
+        percentualUso
+      };
+    }
+
+    function renderizarCards(resumo){
+      $("totalEntradas").textContent = moeda(resumo.entradas);
+      $("totalGastos").textContent = moeda(resumo.gastos);
+      $("saldoPrevisto").textContent = moeda(resumo.saldo);
+      $("saldoPrevisto").className = "metric-value " + (resumo.saldo >= 0 ? "blue-text" : "red-text");
+      $("saldoAcumulado").textContent = moeda(resumo.saldoAcumulado);
+      $("saldoAcumulado").className = "metric-value " + (resumo.saldoAcumulado >= 0 ? "green-text" : "red-text");
+
+      let risco = "Baixo";
+      let texto = "Continue registrando seus gastos.";
+
+      if(resumo.percentualUso >= 95 || resumo.saldo < 0){
+        risco = "Alto";
+        texto = "Pare gastos não essenciais e revise compras recentes.";
+      }else if(resumo.percentualUso >= 75){
+        risco = "Médio";
+        texto = "Cuidado: seu mês já está ficando apertado.";
+      }
+
+      $("nivelRisco").textContent = risco;
+      $("nivelRisco").className = "metric-value " + (risco === "Alto" ? "red-text" : risco === "Médio" ? "yellow-text" : "green-text");
+      $("textoRisco").textContent = texto;
+
+      const pct = Math.min(resumo.percentualUso, 100);
+      $("barraUso").style.width = pct + "%";
+      $("barraUso").className = "bar" + (pct >= 90 ? " danger" : pct >= 70 ? " warn" : "");
+
+      if(resumo.entradas === 0 && config.limiteMensal === 0){
+        $("textoUso").textContent = "Adicione seu salário ou defina um limite mensal.";
+      }else{
+        $("textoUso").textContent = resumo.percentualUso.toFixed(1) + "% do dinheiro disponível no mês já foi usado. Saldo anterior: " + moeda(resumo.saldoAnterior) + ".";
+      }
+    }
+
+    function renderizarAlertas(resumo){
+      const alertas = [];
+
+      if(resumo.entradas === 0){
+        alertas.push(["warn","Cadastre sua renda","Sem salário ou entrada, a análise fica incompleta."]);
+      }
+
+      if(resumo.saldo < 0){
+        alertas.push(["danger","Saldo negativo","Você está gastando mais do que recebeu. Corte compras não essenciais."]);
+      }
+
+      if(resumo.percentualUso >= 90){
+        alertas.push(["danger","Mês em risco","Mais de 90% do dinheiro já foi usado. Evite jogos, delivery e compras por impulso."]);
+      }else if(resumo.percentualUso >= 70){
+        alertas.push(["warn","Atenção ao ritmo","Você já usou mais de 70% do dinheiro do mês."]);
+      }
+
+      const pequenos = lancamentos.filter(item => item.tipo === "gasto" && Number(item.valor) <= 15);
+      const totalPequenos = pequenos.reduce((soma, item) => soma + Number(item.valor), 0);
+
+      if(pequenos.length >= 4 && totalPequenos >= 50){
+        alertas.push(["warn","Gasto formiguinha",pequenos.length + " compras pequenas somaram " + moeda(totalPequenos) + "."]);
+      }
+
+      if(alertas.length === 0){
+        alertas.push(["good","Situação controlada","Nenhum alerta grave encontrado no momento."]);
+      }
+
+      $("alertasDeshbor").innerHTML = alertas.map(a => criarCardAnalise(a[0], a[1], a[2])).join("");
+    }
+
+    function renderizarTabelas(){
+      const pesquisa = ($("pesquisa")?.value || "").toLowerCase();
+      const filtroTipo = $("filtroTipo")?.value || "todos";
+
+      let lista = [...lancamentos];
+
+      if(filtroTipo !== "todos"){
+        lista = lista.filter(item => item.tipo === filtroTipo);
+      }
+
+      if(pesquisa){
+        lista = lista.filter(item =>
+          item.descricao.toLowerCase().includes(pesquisa) ||
+          item.categoria.toLowerCase().includes(pesquisa)
+        );
+      }
+
+      lista.sort((a,b) => b.data.localeCompare(a.data));
+
+      $("tabelaLancamentos").innerHTML = lista.length
+        ? lista.map(linhaTabela).join("")
+        : '<tr><td colspan="7"><div class="empty">Nenhum lançamento encontrado.</div></td></tr>';
+
+      const recentes = [...lancamentos].sort((a,b) => b.data.localeCompare(a.data)).slice(0,8);
+
+      $("tabelaRecentes").innerHTML = recentes.length
+        ? recentes.map(linhaTabela).join("")
+        : '<tr><td colspan="7"><div class="empty">Nenhum lançamento neste mês.</div></td></tr>';
+    }
+
+    function linhaTabela(item){
+      const classeValor = item.tipo === "entrada" ? "money-plus" : "money-minus";
+      const sinal = item.tipo === "entrada" ? "+" : "-";
+
+      return `
+        <tr>
+          <td>${formatarData(item.data)}</td>
+          <td>${escapar(item.descricao)}</td>
+          <td>${escapar(item.categoria)}</td>
+          <td><span class="tag ${escapar(item.importancia)}">${escapar(item.importancia)}</span></td>
+          <td><span class="tag ${escapar(item.tipo)}">${escapar(item.tipo)}</span></td>
+          <td class="${classeValor}">${sinal} ${moeda(item.valor)}</td>
+          <td>
+            <button class="btn small" data-action="editar" data-id="${item.id}">Editar</button>
+            <button class="btn yellow small" data-action="arrependimento" data-id="${item.id}">Arrependi</button>
+            <button class="btn small" data-action="duplicar" data-id="${item.id}">Duplicar</button>
+            <button class="btn red small" data-action="apagar" data-id="${item.id}">Apagar</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderizarAnalise(resumo){
+      const comprasRuins = [];
+      const gastos = lancamentos.filter(item => item.tipo === "gasto");
+
+      gastos
+        .filter(item => item.importancia === "impulso" || item.importancia === "arrependimento")
+        .sort((a,b) => Number(b.valor) - Number(a.valor))
+        .slice(0,6)
+        .forEach(item => {
+          comprasRuins.push([
+            item.importancia === "arrependimento" ? "danger" : "warn",
+            "Talvez não precisava: " + item.descricao,
+            "Você gastou " + moeda(item.valor) + " em " + item.categoria + ". Contorno: tente devolver, vender, trocar ou compensar cortando outro gasto parecido."
+          ]);
+        });
+
+      Object.entries(resumo.gastosPorCategoria).forEach(([categoria, valor]) => {
+        const limite = resumo.entradas ? resumo.entradas * 0.20 : resumo.gastos * 0.35;
+
+        if(["Jogo","Delivery","Lazer","Roupa"].includes(categoria) && valor > limite && valor > 50){
+          comprasRuins.push([
+            "danger",
+            "Categoria perigosa: " + categoria,
+            "Você gastou " + moeda(valor) + " em " + categoria + ". Essa categoria está pesando demais no mês."
+          ]);
+        }
+      });
+
+      if(comprasRuins.length === 0){
+        comprasRuins.push(["good","Nenhum problema grave encontrado","Até agora, seus gastos não mostram um padrão preocupante. Continue registrando tudo."]);
+      }
+
+      $("comprasRuins").innerHTML = comprasRuins.map(a => criarCardAnalise(a[0], a[1], a[2])).join("");
+
+      const plano = [];
+
+      if(resumo.saldo < 0){
+        plano.push(["danger","Recuperar saldo negativo","Você precisa recuperar " + moeda(Math.abs(resumo.saldo)) + ". Corte compras não essenciais até fechar essa diferença."]);
+      }
+
+      if(resumo.percentualUso >= 75){
+        plano.push(["warn","Modo economia por 7 dias","Durante uma semana, só compre o que for essencial. Mercado, transporte e contas primeiro."]);
+      }
+
+      plano.push(["warn","Regra das 24 horas","Para jogo, delivery, roupa ou lazer, espere 24 horas antes de comprar. Isso reduz compra por impulso."]);
+      plano.push(["good","Compensação inteligente","Comprou algo que não devia? Corte outro gasto da mesma categoria até recuperar o valor."]);
+      plano.push(["good","Separar dinheiro ao receber","Quando receber salário, separe uma parte antes de gastar. Não espere sobrar."]);
+
+      $("planoContorno").innerHTML = plano.map(a => criarCardAnalise(a[0], a[1], a[2])).join("");
+
+      renderizarTopGastos();
+      renderizarRelatorio(resumo);
+    }
+
+    function renderizarTopGastos(){
+      const top = lancamentos
+        .filter(item => item.tipo === "gasto")
+        .sort((a,b) => Number(b.valor) - Number(a.valor))
+        .slice(0,6);
+
+      if(top.length === 0){
+        $("topGastos").innerHTML = '<div class="empty">Nenhum gasto cadastrado.</div>';
+        return;
+      }
+
+      $("topGastos").innerHTML = top.map((item, index) => {
+        const tipo = item.importancia === "impulso" || item.importancia === "arrependimento" ? "warn" : "good";
+
+        return criarCardAnalise(
+          tipo,
+          (index + 1) + "º - " + item.descricao,
+          item.categoria + " • " + item.importancia + " • " + moeda(item.valor)
+        );
+      }).join("");
+    }
+
+    function renderizarRelatorio(resumo){
+      const categorias = Object.entries(resumo.gastosPorCategoria).sort((a,b) => b[1] - a[1]);
+      const maiorCategoria = categorias[0] ? categorias[0][0] + " (" + moeda(categorias[0][1]) + ")" : "Sem gastos";
+      const impulsos = lancamentos
+        .filter(item => item.tipo === "gasto" && ["impulso","arrependimento"].includes(item.importancia))
+        .reduce((soma, item) => soma + Number(item.valor), 0);
+
+      const cards = [
+        ["good","Entrou no mês",moeda(resumo.entradas)],
+        [resumo.saldo >= 0 ? "good" : "danger","Saldo previsto",moeda(resumo.saldo)],
+        ["warn","Maior categoria",maiorCategoria],
+        [impulsos > 0 ? "warn" : "good","Possível economia",impulsos > 0 ? "Se tivesse evitado impulsos/arrependimentos: " + moeda(impulsos) : "Nenhum impulso marcado."]
+      ];
+
+      $("relatorioMensal").innerHTML = cards.map(a => criarCardAnalise(a[0], a[1], a[2])).join("");
+    }
+
+    function criarCardAnalise(tipo, titulo, texto){
+      return `
+        <div class="analysis-card ${tipo}">
+          <strong>${escapar(titulo)}</strong>
+          <p>${escapar(texto)}</p>
+        </div>
+      `;
+    }
+
+    function carregarCDB(){
+      const salvo = localStorage.getItem("deshbor_cdb_bb_v1");
+
+      if(salvo){
+        try{
+          cdb = { ...cdb, ...JSON.parse(salvo) };
+        }catch(e){}
+      }
+
+      if($("cdbValor")) $("cdbValor").value = cdb.valorAplicado ? String(cdb.valorAplicado).replace(".", ",") : "";
+      if($("cdbData")) $("cdbData").value = cdb.dataAplicacao || dataHoje();
+      if($("cdbCdiAnual")) $("cdbCdiAnual").value = String(cdb.cdiAnual || 14.40).replace(".", ",");
+      if($("cdbPercentual")) $("cdbPercentual").value = String(cdb.percentualCdi || 100).replace(".", ",");
+      if($("cdbPrazo")) $("cdbPrazo").value = cdb.prazoMeses || 12;
+      if($("cdbModo")) $("cdbModo").value = cdb.modo || "liquido";
+    }
+
+    function lerCDBDaTela(){
+      const valorAplicado = paraNumero($("cdbValor")?.value || 0);
+      const dataAplicacao = $("cdbData")?.value || dataHoje();
+      const cdiAnual = paraNumero($("cdbCdiAnual")?.value || 14.40);
+      const percentualCdi = paraNumero($("cdbPercentual")?.value || 100);
+      const prazoMeses = Math.max(1, Number($("cdbPrazo")?.value || 12));
+      const modo = $("cdbModo")?.value || "liquido";
+
+      return { valorAplicado, dataAplicacao, cdiAnual, percentualCdi, prazoMeses, modo };
+    }
+
+    function usarSaldoNoCDB(){
+      const resumo = calcularResumo();
+      const valorDisponivel = Math.max(0, resumo.saldoAcumulado);
+      $("cdbValor").value = String(arredondar(valorDisponivel)).replace(".", ",");
+      renderizarCDB(resumo);
+      aviso("Saldo acumulado preenchido na caixa CDB.");
+    }
+
+    function salvarCDB(){
+      cdb = lerCDBDaTela();
+
+      if(cdb.valorAplicado < 0){
+        aviso("O valor do CDB não pode ser negativo.");
+        return;
+      }
+
+      if(!cdb.valorAplicado){
+        aviso("Digite o valor que deseja colocar na caixa CDB.");
+        return;
+      }
+
+      localStorage.setItem("deshbor_cdb_bb_v1", JSON.stringify(cdb));
+      aviso("Caixa CDB salva neste navegador.");
+      renderizarCDB(calcularResumo());
+    }
+
+    function limparCDB(){
+      cdb = { valorAplicado:0, dataAplicacao:dataHoje(), cdiAnual:14.40, percentualCdi:100, prazoMeses:12, modo:"liquido" };
+      localStorage.removeItem("deshbor_cdb_bb_v1");
+      carregarCDB();
+      renderizarTudo();
+      aviso("Caixa CDB limpa.");
+    }
+
+    function renderizarCDB(resumo){
+      const caixaForm = $("resultadoCDB");
+      const caixaDashboard = $("resultadoCDBDashboard");
+
+      const dados = lerCDBDaTela();
+      const valor = Number(dados.valorAplicado || 0);
+      const taxaAnual = Math.max(0, (Number(dados.cdiAnual || 0) / 100) * (Number(dados.percentualCdi || 0) / 100));
+      const taxaMensal = Math.pow(1 + taxaAnual, 1 / 12) - 1;
+      const brutoFinal = valor * Math.pow(1 + taxaMensal, dados.prazoMeses);
+      const rendimentoBruto = Math.max(0, brutoFinal - valor);
+      const dias = dados.prazoMeses * 30;
+      const irAliquota = aliquotaIR(dias);
+      const ir = rendimentoBruto * irAliquota;
+      const rendimentoLiquido = dados.modo === "bruto" ? rendimentoBruto : rendimentoBruto - ir;
+      const valorFinal = valor + rendimentoLiquido;
+      const rendaMediaMensal = dados.prazoMeses > 0 ? rendimentoLiquido / dados.prazoMeses : 0;
+      const saldoLivre = Number(resumo.saldoAcumulado || 0) - valor;
+
+      atualizarCardsCDB(valor, saldoLivre, rendimentoLiquido);
+
+      if(!caixaForm && !caixaDashboard) return;
+
+      if(!valor){
+        const htmlDashboard = [
+          criarCardAnalise("warn", "Nenhum valor reservado no CDB", "A caixa CDB ainda está vazia. Vá em Lançamentos > Caixa CDB Banco do Brasil e clique em Usar saldo acumulado ou digite um valor."),
+          criarCardAnalise("good", "Saldo acumulado disponível", moeda(resumo.saldoAcumulado || 0)),
+          criarCardAnalise("good", "Saldo livre", moeda(resumo.saldoAcumulado || 0))
+        ].join("");
+
+        const htmlForm = criarCardAnalise(
+          "warn",
+          "Caixa CDB vazia",
+          "Digite um valor manualmente ou clique em Usar saldo acumulado. A caixa CDB não é lançamento de gasto; é uma simulação separada."
+        );
+
+        if(caixaDashboard) caixaDashboard.innerHTML = htmlDashboard;
+        if(caixaForm) caixaForm.innerHTML = htmlForm;
+        return;
+      }
+
+      const status = valor > resumo.saldoAcumulado && resumo.saldoAcumulado > 0
+        ? ["danger", "Atenção", "O valor reservado no CDB está maior que o saldo acumulado atual. Reduza o CDB ou confira os lançamentos."]
+        : ["good", "Conferência", "O valor do CDB está dentro do saldo acumulado atual."];
+
+      const resultadoDashboard = [
+        criarCardAnalise("good", "Valor reservado no CDB BB", moeda(valor)),
+        criarCardAnalise(saldoLivre >= 0 ? "good" : "danger", "Saldo livre fora do CDB", moeda(saldoLivre)),
+        criarCardAnalise("good", "Valor final estimado", moeda(valorFinal)),
+        criarCardAnalise("warn", "Rendimento líquido estimado", moeda(rendimentoLiquido) + " em " + dados.prazoMeses + " meses. Média: " + moeda(rendaMediaMensal) + "/mês."),
+        criarCardAnalise(status[0], status[1], status[2])
+      ].join("");
+
+      const resultadoForm = [
+        criarCardAnalise("good", "Valor reservado no CDB", moeda(valor)),
+        criarCardAnalise("good", "Saldo acumulado atual", moeda(resumo.saldoAcumulado || 0)),
+        criarCardAnalise(saldoLivre >= 0 ? "good" : "danger", "Saldo livre após separar CDB", moeda(saldoLivre)),
+        criarCardAnalise("good", "Valor estimado no final", moeda(valorFinal)),
+        criarCardAnalise("warn", "Rendimento estimado", "Bruto: " + moeda(rendimentoBruto) + " • IR estimado: " + moeda(ir) + " • Líquido: " + moeda(rendimentoLiquido)),
+        criarCardAnalise(status[0], status[1], status[2])
+      ].join("");
+
+      if(caixaDashboard) caixaDashboard.innerHTML = resultadoDashboard;
+      if(caixaForm) caixaForm.innerHTML = resultadoForm;
+    }
+
+    function atualizarCardsCDB(valor, saldoLivre, rendimentoLiquido){
+      if($("cdbAplicadoCard")) $("cdbAplicadoCard").textContent = moeda(valor || 0);
+      if($("saldoLivreCard")){
+        $("saldoLivreCard").textContent = moeda(saldoLivre || 0);
+        $("saldoLivreCard").className = "metric-value " + (saldoLivre >= 0 ? "green-text" : "red-text");
+      }
+      if($("cdbRendimentoCard")) $("cdbRendimentoCard").textContent = moeda(rendimentoLiquido || 0);
+    }
+
+    function aliquotaIR(dias){
+      if(dias <= 180) return 0.225;
+      if(dias <= 360) return 0.20;
+      if(dias <= 720) return 0.175;
+      return 0.15;
+    }
+
+    function salvarConfiguracao(){
+      config.limiteMensal = paraNumero($("limiteMensal").value);
+      config.reservaDesejada = paraNumero($("reservaDesejada").value);
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+
+      aviso("Configuração salva.");
+      renderizarTudo();
+    }
+
+    function carregarConfig(){
+      const configSalva = localStorage.getItem(CONFIG_KEY);
+
+      if(configSalva){
+        try{
+          config = JSON.parse(configSalva);
+        }catch(e){}
+      }
+
+      $("limiteMensal").value = config.limiteMensal ? String(config.limiteMensal).replace(".", ",") : "";
+      $("reservaDesejada").value = config.reservaDesejada ? String(config.reservaDesejada).replace(".", ",") : "";
+    }
+
+    function renderizarGraficos(resumo){
+      criarGraficoResumo(resumo);
+      criarGraficoCategorias(resumo);
+      criarGraficoDias(resumo);
+      criarGraficoImportancia(resumo);
+      criarGraficoPizzaAnalise(resumo);
+    }
+
+    function destruirGrafico(nome){
+      if(graficos[nome]){
+        graficos[nome].destroy();
+      }
+    }
+
+    function destruirTodosGraficos(){
+      Object.keys(graficos).forEach(nome => destruirGrafico(nome));
+      graficos = {};
+    }
+
+    function criarGraficoResumo(resumo){
+      destruirGrafico("resumo");
+      const ctx = $("graficoResumo");
+      if(!ctx) return;
+
+      graficos.resumo = new Chart(ctx, {
+        type:"bar",
+        data:{
+          labels:["Entradas","Gastos","Saldo"],
+          datasets:[{
+            label:"Resumo do mês",
+            data:[resumo.entradas,resumo.gastos,resumo.saldo],
+            backgroundColor:["rgba(34,197,94,.75)","rgba(239,68,68,.75)","rgba(56,189,248,.75)"],
+            borderRadius:12
+          }]
+        },
+        options:opcoesGrafico()
+      });
+    }
+
+    function criarGraficoCategorias(resumo){
+      destruirGrafico("categorias");
+      const ctx = $("graficoCategorias");
+      if(!ctx) return;
+
+      const labels = Object.keys(resumo.gastosPorCategoria);
+      const valores = Object.values(resumo.gastosPorCategoria);
+
+      graficos.categorias = new Chart(ctx, {
+        type:"doughnut",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            data:valores.length ? valores : [1],
+            backgroundColor:coresGraficos(),
+            borderColor:"rgba(255,255,255,.08)"
+          }]
+        },
+        options:opcoesPizza()
+      });
+    }
+
+    function criarGraficoDias(resumo){
+      destruirGrafico("dias");
+      const ctx = $("graficoDias");
+      if(!ctx) return;
+
+      const dias = Object.keys(resumo.porDia).sort((a,b) => Number(a) - Number(b));
+
+      graficos.dias = new Chart(ctx, {
+        type:"line",
+        data:{
+          labels:dias.length ? dias : ["Hoje"],
+          datasets:[
+            {
+              label:"Entradas",
+              data:dias.length ? dias.map(dia => resumo.porDia[dia].entradas) : [0],
+              borderColor:"rgba(34,197,94,1)",
+              backgroundColor:"rgba(34,197,94,.12)",
+              tension:.35,
+              fill:true
+            },
+            {
+              label:"Gastos",
+              data:dias.length ? dias.map(dia => resumo.porDia[dia].gastos) : [0],
+              borderColor:"rgba(239,68,68,1)",
+              backgroundColor:"rgba(239,68,68,.12)",
+              tension:.35,
+              fill:true
+            }
+          ]
+        },
+        options:opcoesGrafico()
+      });
+    }
+
+    function criarGraficoImportancia(resumo){
+      destruirGrafico("importancia");
+      const ctx = $("graficoImportancia");
+      if(!ctx) return;
+
+      const labels = Object.keys(resumo.importancia);
+      const valores = Object.values(resumo.importancia);
+
+      graficos.importancia = new Chart(ctx, {
+        type:"bar",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            label:"Valor por importância",
+            data:valores.length ? valores : [0],
+            backgroundColor:["rgba(34,197,94,.75)","rgba(56,189,248,.75)","rgba(245,158,11,.75)","rgba(239,68,68,.75)"],
+            borderRadius:12
+          }]
+        },
+        options:opcoesGrafico()
+      });
+    }
+
+    function criarGraficoPizzaAnalise(resumo){
+      destruirGrafico("pizzaAnalise");
+      const ctx = $("graficoPizzaAnalise");
+      if(!ctx) return;
+
+      const labels = Object.keys(resumo.gastosPorCategoria);
+      const valores = Object.values(resumo.gastosPorCategoria);
+
+      graficos.pizzaAnalise = new Chart(ctx, {
+        type:"pie",
+        data:{
+          labels:labels.length ? labels : ["Sem gastos"],
+          datasets:[{
+            data:valores.length ? valores : [1],
+            backgroundColor:coresGraficos(),
+            borderColor:"rgba(255,255,255,.08)"
+          }]
+        },
+        options:opcoesPizza()
+      });
+    }
+
+    function opcoesGrafico(){
+      return {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ labels:{ color:"#cbd5e1" } },
+          tooltip:{ callbacks:{ label:context => context.dataset.label + ": " + moeda(context.raw) } }
+        },
+        scales:{
+          x:{ ticks:{ color:"#94a3b8" }, grid:{ color:"rgba(255,255,255,.06)" } },
+          y:{
+            ticks:{ color:"#94a3b8", callback:value => "R$ " + value },
+            grid:{ color:"rgba(255,255,255,.06)" }
+          }
+        }
+      };
+    }
+
+    function opcoesPizza(){
+      return {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:"bottom", labels:{ color:"#cbd5e1" } },
+          tooltip:{ callbacks:{ label:context => context.label + ": " + moeda(context.raw) } }
+        }
+      };
+    }
+
+    function coresGraficos(){
+      return [
+        "rgba(56,189,248,.78)",
+        "rgba(239,68,68,.78)",
+        "rgba(245,158,11,.78)",
+        "rgba(34,197,94,.78)",
+        "rgba(168,85,247,.78)",
+        "rgba(99,102,241,.78)",
+        "rgba(20,184,166,.78)",
+        "rgba(251,113,133,.78)"
+      ];
+    }
+
+    function exportarJSON(){
+      const arquivo = new Blob([JSON.stringify(lancamentos, null, 2)], { type:"application/json" });
+      baixarArquivo(arquivo, "backup-deshbor-supabase.json");
+    }
+
+    function exportarCSV(){
+      const linhas = [["data","tipo","descricao","categoria","importancia","pagamento","valor"]];
+
+      lancamentos.forEach(item => {
+        linhas.push([item.data,item.tipo,item.descricao,item.categoria,item.importancia,item.pagamento,item.valor]);
+      });
+
+      const csv = linhas.map(linha =>
+        linha.map(campo => `"${String(campo ?? "").replaceAll('"', '""')}"`).join(";")
+      ).join("\n");
+
+      const arquivo = new Blob([csv], { type:"text/csv;charset=utf-8" });
+      baixarArquivo(arquivo, "lancamentos-deshbor-supabase.csv");
+    }
+
+    function baixarArquivo(blob, nome){
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = nome;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function copiarSQL(){
+      navigator.clipboard.writeText(SQL_NECESSARIO);
+      aviso("SQL copiado.");
+    }
+
+    function intervaloMes(mes){
+      const [ano, numeroMes] = mes.split("-").map(Number);
+      const inicio = `${ano}-${String(numeroMes).padStart(2,"0")}-01`;
+      const ultimoDia = new Date(ano, numeroMes, 0).getDate();
+      const fim = `${ano}-${String(numeroMes).padStart(2,"0")}-${String(ultimoDia).padStart(2,"0")}`;
+      return { inicio, fim };
+    }
+
+    function adicionarMeses(data, meses){
+      const [ano, mes, dia] = data.split("-").map(Number);
+      const alvo = new Date(ano, mes - 1 + meses, 1);
+      const ultimoDia = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+      const diaFinal = Math.min(dia, ultimoDia);
+      return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2,"0")}-${String(diaFinal).padStart(2,"0")}`;
+    }
+
+    function arredondar(valor){
+      return Math.round(Number(valor) * 100) / 100;
+    }
+
+    function paraNumero(valor){
+      if(typeof valor === "number") return valor;
+      const texto = String(valor || "0").trim();
+
+      if(texto.includes(",")){
+        return Number(texto.replace(/\./g, "").replace(",", "."));
+      }
+
+      return Number(texto);
+    }
+
+    function moeda(valor){
+      return Number(valor || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function dataHoje(){
+      return new Date().toISOString().slice(0,10);
+    }
+
+    function mesAtual(){
+      return new Date().toISOString().slice(0,7);
+    }
+
+    function formatarData(data){
+      if(!data) return "-";
+      const [ano, mes, dia] = data.split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function primeiraMaiuscula(texto){
+      return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
+    }
+
+    function escapar(texto){
+      return String(texto ?? "").replace(/[&<>"']/g, letra => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+      }[letra]));
+    }
+
+    function traduzErro(msg){
+      if(!msg) return "Erro desconhecido.";
+      if(msg.includes("Invalid login credentials")) return "E-mail ou senha incorretos.";
+      if(msg.includes("Email not confirmed")) return "Confirme seu e-mail antes de entrar.";
+      if(msg.includes("User already registered")) return "Esse e-mail já tem conta. Clique em Entrar.";
+      if(msg.includes("relation") && msg.includes("does not exist")) return "A tabela ainda não existe. Rode o SQL na aba Configuração.";
+      if(msg.includes("row-level security")) return "Erro de permissão RLS. Confira as policies do SQL.";
+      return msg;
+    }
+
+    function aviso(texto){
+      const toast = $("toast");
+      toast.textContent = texto;
+      toast.classList.add("show");
+
+      setTimeout(() => toast.classList.remove("show"), 3400);
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DESHBOR - Controle Financeiro</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{
+      --bg:#050816;
+      --bg2:#0f172a;
+      --card:#111a2e;
+      --card2:#162238;
+      --border:rgba(255,255,255,.10);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --blue:#38bdf8;
+      --blue2:#2563eb;
+      --green:#22c55e;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --purple:#a855f7;
+      --radius:22px;
+      --shadow:0 22px 60px rgba(0,0,0,.38);
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif}
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left,rgba(56,189,248,.18),transparent 32%),
+        radial-gradient(circle at top right,rgba(168,85,247,.15),transparent 32%),
+        linear-gradient(135deg,var(--bg),var(--bg2));
+      color:var(--text);
+      padding:18px;
+    }
+
+    .hidden{display:none!important}
+    .muted{color:var(--muted)}
+    .green-text{color:#86efac}
+    .red-text{color:#fca5a5}
+    .blue-text{color:#7dd3fc}
+    .yellow-text{color:#fcd34d}
+
+    input,select,textarea{
+      width:100%;
+      background:#0a1222;
+      color:var(--text);
+      border:1px solid rgba(148,163,184,.22);
+      border-radius:14px;
+      padding:12px 13px;
+      outline:none;
+    }
+    input:focus,select:focus,textarea:focus{
+      border-color:rgba(56,189,248,.75);
+      box-shadow:0 0 0 3px rgba(56,189,248,.12);
+    }
+    label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
+
+    .btn{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 14px;
+      background:var(--card2);
+      color:var(--text);
+      cursor:pointer;
+      transition:.2s;
+      white-space:nowrap;
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .btn.primary{border:none;background:linear-gradient(135deg,var(--blue2),var(--blue));color:white;font-weight:800}
+    .btn.green{border:none;background:linear-gradient(135deg,#16a34a,var(--green));color:white;font-weight:800}
+    .btn.red{background:rgba(239,68,68,.13);border-color:rgba(239,68,68,.28);color:#fecaca}
+    .btn.yellow{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.28);color:#fde68a}
+    .btn.small{padding:8px 10px;border-radius:11px;font-size:12px}
+
+    .login-screen{
+      min-height:calc(100vh - 36px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .login-card{
+      width:100%;
+      max-width:460px;
+      background:rgba(17,26,46,.88);
+      border:1px solid var(--border);
+      border-radius:28px;
+      padding:26px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(18px);
+    }
+    .login-logo{
+      width:62px;height:62px;border-radius:20px;
+      background:linear-gradient(135deg,var(--blue2),var(--blue),var(--purple));
+      display:grid;place-items:center;
+      font-size:25px;font-weight:900;
+      margin-bottom:16px;
+    }
+    .login-card h1{font-size:28px;margin-bottom:6px}
+    .login-card p{color:var(--muted);font-size:14px;line-height:1.45;margin-bottom:18px}
+    .login-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+    .app{
+      max-width:1450px;
+      margin:auto;
+      display:grid;
+      grid-template-columns:285px 1fr;
+      gap:18px;
+    }
+    .sidebar{
+      background:rgba(17,26,46,.85);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      min-height:calc(100vh - 36px);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+      position:sticky;
+      top:18px;
+    }
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+    .brand-icon{
+      width:48px;height:48px;border-radius:16px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--blue2),var(--blue),var(--purple));
+      font-weight:900;font-size:21px;
+      box-shadow:0 12px 28px rgba(56,189,248,.24);
+    }
+    .brand h1{font-size:21px;letter-spacing:.5px}
+    .brand p{color:var(--muted);font-size:12px;margin-top:3px;word-break:break-word}
+
+    .menu{display:grid;gap:10px}
+    .menu button{
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--muted);
+      padding:13px 14px;
+      border-radius:15px;
+      cursor:pointer;
+      text-align:left;
+      font-size:14px;
+      transition:.2s;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .menu button:hover,.menu button.active{
+      background:rgba(56,189,248,.12);
+      color:var(--text);
+      border-color:rgba(56,189,248,.22);
+    }
+
+    .side-note{
+      margin-top:18px;
+      padding:15px;
+      border-radius:18px;
+      background:linear-gradient(135deg,rgba(37,99,235,.18),rgba(168,85,247,.13));
+      border:1px solid var(--border);
+    }
+    .side-note h3{font-size:14px;margin-bottom:8px}
+    .side-note p{color:var(--muted);font-size:12.5px;line-height:1.45}
+
+    main{min-width:0}
+    .topbar{
+      background:rgba(17,26,46,.78);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .topbar h2{font-size:28px;letter-spacing:.3px}
+    .topbar p{margin-top:5px;color:var(--muted);font-size:13px}
+    .top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+    .section{display:none}
+    .section.active{display:block}
+    .grid{display:grid;gap:18px}
+    .metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .dashboard-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:18px}
+    .charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+    .full{grid-column:1/-1}
+
+    .card{
+      background:rgba(17,26,46,.82);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(16px);
+    }
+    .card h3{font-size:17px;margin-bottom:6px}
+    .desc{color:var(--muted);font-size:13px;line-height:1.45}
+
+    .metric-card{position:relative;overflow:hidden}
+    .metric-card::after{
+      content:"";
+      position:absolute;
+      right:-45px;
+      top:-45px;
+      width:115px;height:115px;
+      border-radius:50%;
+      background:rgba(56,189,248,.08);
+    }
+    .metric-title{color:var(--muted);font-size:13px}
+    .metric-value{font-size:29px;font-weight:900;margin-top:8px;letter-spacing:-.7px}
+    .metric-hint{color:var(--muted);font-size:12px;margin-top:8px}
+
+    .chart-box{height:330px;position:relative}
+    .chart-box.large{height:385px}
+
+    .quick-launch{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px}
+
+    table{width:100%;border-collapse:separate;border-spacing:0 9px}
+    th{color:var(--muted);font-size:12px;text-align:left;font-weight:500;padding:0 10px}
+    td{
+      background:rgba(10,18,34,.82);
+      padding:12px 10px;
+      font-size:13px;
+      border-top:1px solid rgba(255,255,255,.06);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    td:first-child{border-radius:14px 0 0 14px;border-left:1px solid rgba(255,255,255,.06)}
+    td:last-child{border-radius:0 14px 14px 0;border-right:1px solid rgba(255,255,255,.06)}
+
+    .tag{
+      display:inline-flex;
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      background:rgba(255,255,255,.08);
+      color:var(--text);
+    }
+    .tag.entrada{background:rgba(34,197,94,.14);color:#bbf7d0}
+    .tag.gasto{background:rgba(239,68,68,.14);color:#fecaca}
+    .tag.essencial{background:rgba(34,197,94,.14);color:#bbf7d0}
+    .tag.util{background:rgba(56,189,248,.14);color:#bae6fd}
+    .tag.impulso,.tag.arrependimento{background:rgba(245,158,11,.15);color:#fde68a}
+    .money-plus{color:#86efac;font-weight:900}
+    .money-minus{color:#fca5a5;font-weight:900}
+
+    .analysis-list{display:grid;gap:12px;margin-top:14px}
+    .analysis-card{
+      border-radius:18px;
+      padding:14px;
+      background:rgba(10,18,34,.75);
+      border:1px solid var(--border);
+    }
+    .analysis-card strong{display:block;margin-bottom:6px}
+    .analysis-card p{color:var(--muted);font-size:13px;line-height:1.45}
+    .analysis-card.good{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.28)}
+    .analysis-card.warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.30)}
+    .analysis-card.danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.30)}
+
+    .progress{
+      width:100%;
+      height:12px;
+      background:#0a1222;
+      border:1px solid rgba(148,163,184,.16);
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--blue));transition:.3s}
+    .bar.warn{background:linear-gradient(90deg,var(--yellow),#f97316)}
+    .bar.danger{background:linear-gradient(90deg,var(--red),#f97316)}
+
+    .empty{
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:18px;
+      padding:28px 12px;
+      text-align:center;
+      color:var(--muted);
+    }
+
+    .edit-banner{
+      display:none;
+      margin-top:14px;
+      padding:12px 14px;
+      border:1px solid rgba(245,158,11,.35);
+      border-radius:16px;
+      background:rgba(245,158,11,.09);
+      color:#fde68a;
+      font-size:13px;
+    }
+    .edit-banner.show{display:block}
+
+    .sql-box{
+      background:#07101f;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:14px;
+      overflow:auto;
+      color:#dbeafe;
+      font-size:12.5px;
+      line-height:1.45;
+      max-height:420px;
+      white-space:pre;
+    }
+
+    .toast{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:50;
+      display:none;
+      max-width:390px;
+      background:#0a1222;
+      border:1px solid rgba(56,189,248,.3);
+      border-radius:15px;
+      padding:13px 15px;
+      color:var(--text);
+      box-shadow:var(--shadow);
+    }
+    .toast.show{display:block}
+
+    @media(max-width:1050px){
+      .app{grid-template-columns:1fr}
+      .sidebar{position:relative;top:0;min-height:auto}
+      .menu{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .dashboard-grid,.charts-grid{grid-template-columns:1fr}
+    }
+
+    @media(max-width:680px){
+      body{padding:10px}
+      .topbar{flex-direction:column;align-items:flex-start}
+      .top-actions,.top-actions input,.top-actions button{width:100%}
+      .menu{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .metrics,.form-grid,.quick-launch,.login-actions{grid-template-columns:1fr}
+      .chart-box,.chart-box.large{height:300px}
+      th:nth-child(4),td:nth-child(4){display:none}
+    }
+  </style>
+</head>
+
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">R$</div>
+      <h1>DESHBOR</h1>
+      <p>Entre na sua conta para salvar seus lançamentos no Supabase com segurança por usuário.</p>
+
+      <div>
+        <label>E-mail</label>
+        <input id="loginEmail" type="email" placeholder="seuemail@email.com" autocomplete="email" />
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Senha</label>
+        <input id="loginSenha" type="password" placeholder="Sua senha" autocomplete="current-password" />
+      </div>
+
+      <div class="login-actions">
+        <button id="btnEntrar" class="btn green" onclick="entrar()">Entrar</button>
+        <button id="btnCadastrar" class="btn primary" onclick="cadastrar()">Criar conta</button>
+      </div>
+
+      <button class="btn" style="width:100%;margin-top:10px" onclick="recuperarSenha()">Esqueci minha senha</button>
+
+      <div class="side-note" style="margin-top:16px">
+        <h3>Status</h3>
+        <p id="loginStatus">Conectando ao Supabase...</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">R$</div>
+        <div>
+          <h1>DESHBOR</h1>
+          <p id="emailUsuario">Carregando...</p>
+        </div>
+      </div>
+
+      <div class="menu">
+        <button class="active" onclick="abrirJanela('deshbor', this)">📊 Deshbor</button>
+        <button onclick="abrirJanela('lancamentos', this)">➕ Lançamentos</button>
+        <button onclick="abrirJanela('analise', this)">🧠 Análise</button>
+        <button onclick="abrirJanela('config', this)">⚙️ Configuração</button>
+      </div>
+
+      <div class="side-note">
+        <h3>Entrada rápida</h3>
+        <p>Digite: “salário 2500”, “mercado 30”, “jogo 40”, “delivery 25” ou “recebi bico 150”.</p>
+      </div>
+
+      <div class="side-note">
+        <h3>Novidade</h3>
+        <p>Agora o cadastro manual cria compras parceladas automaticamente, sem precisar mudar a tabela.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <h2 id="tituloPagina">DESHBOR</h2>
+          <p id="subtituloPagina">Resumo visual do seu dinheiro, gastos, entradas e riscos.</p>
+        </div>
+
+        <div class="top-actions">
+          <input type="month" id="filtroMes" onchange="carregarLancamentos()" />
+          <button class="btn primary" onclick="abrirJanela('lancamentos', document.querySelector('.menu button:nth-child(2)'))">Novo lançamento</button>
+          <button class="btn red" onclick="sair()">Sair</button>
+        </div>
+      </header>
+
+      <section id="deshbor" class="section active">
+        <div class="grid metrics">
+          <div class="card metric-card">
+            <div class="metric-title">Entradas do mês</div>
+            <div class="metric-value green-text" id="totalEntradas">R$ 0,00</div>
+            <div class="metric-hint">Salário, bicos e rendas extras.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Gastos do mês</div>
+            <div class="metric-value red-text" id="totalGastos">R$ 0,00</div>
+            <div class="metric-hint">Compras, mercado, jogos e contas.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Saldo do mês</div>
+            <div class="metric-value blue-text" id="saldoPrevisto">R$ 0,00</div>
+            <div class="metric-hint">Entradas menos gastos do mês.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Saldo acumulado</div>
+            <div class="metric-value green-text" id="saldoAcumulado">R$ 0,00</div>
+            <div class="metric-hint">Saldo anterior + mês atual.</div>
+          </div>
+
+          <div class="card metric-card">
             <div class="metric-title">Nível de risco</div>
             <div class="metric-value yellow-text" id="nivelRisco">Baixo</div>
             <div class="metric-hint" id="textoRisco">Continue registrando seus gastos.</div>
