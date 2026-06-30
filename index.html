@@ -186,7 +186,7 @@
     .section{display:none}
     .section.active{display:block}
     .grid{display:grid;gap:18px}
-    .metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
     .dashboard-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:18px}
     .charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
@@ -434,9 +434,15 @@
           </div>
 
           <div class="card metric-card">
-            <div class="metric-title">Saldo previsto</div>
+            <div class="metric-title">Saldo do mês</div>
             <div class="metric-value blue-text" id="saldoPrevisto">R$ 0,00</div>
-            <div class="metric-hint">Entradas menos gastos.</div>
+            <div class="metric-hint">Entradas menos gastos do mês.</div>
+          </div>
+
+          <div class="card metric-card">
+            <div class="metric-title">Saldo acumulado</div>
+            <div class="metric-value green-text" id="saldoAcumulado">R$ 0,00</div>
+            <div class="metric-hint">Saldo anterior + mês atual.</div>
           </div>
 
           <div class="card metric-card">
@@ -460,6 +466,55 @@
             <p class="desc" id="textoUso" style="margin-top:12px">0% usado.</p>
             <div class="analysis-list" id="alertasDeshbor"></div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Caixa CDB Banco do Brasil</h3>
+          <p class="desc">Simule uma aplicação em CDB usando seu saldo acumulado. A simulação é estimada e você pode alterar CDI, percentual do CDI e prazo.</p>
+
+          <div class="form-grid">
+            <div>
+              <label>Valor para colocar no CDB</label>
+              <input id="cdbValor" inputmode="decimal" placeholder="Ex: 4000" />
+            </div>
+
+            <div>
+              <label>Data da aplicação</label>
+              <input id="cdbData" type="date" />
+            </div>
+
+            <div>
+              <label>CDI ao ano (%)</label>
+              <input id="cdbCdiAnual" inputmode="decimal" value="14,40" />
+            </div>
+
+            <div>
+              <label>Percentual do CDI (%)</label>
+              <input id="cdbPercentual" inputmode="decimal" value="100" />
+            </div>
+
+            <div>
+              <label>Prazo da simulação (meses)</label>
+              <input id="cdbPrazo" type="number" min="1" max="120" value="12" />
+            </div>
+
+            <div>
+              <label>Modo</label>
+              <select id="cdbModo">
+                <option value="liquido">Mostrar líquido com IR</option>
+                <option value="bruto">Mostrar bruto sem IR</option>
+              </select>
+            </div>
+
+            <div class="full" style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn primary" type="button" onclick="usarSaldoNoCDB()">Usar saldo acumulado</button>
+              <button class="btn green" type="button" onclick="salvarCDB()">Salvar caixa CDB</button>
+              <button class="btn" type="button" onclick="renderizarCDB(calcularResumo())">Simular</button>
+              <button class="btn red" type="button" onclick="limparCDB()">Limpar CDB</button>
+            </div>
+          </div>
+
+          <div class="analysis-list" id="resultadoCDB"></div>
         </div>
 
         <div class="charts-grid">
@@ -781,8 +836,11 @@ using (auth.uid() = user_id);`;
     let supabaseClient = null;
     let usuarioAtual = null;
     let lancamentos = [];
+    let historicoAteFim = [];
+    let periodoAtual = { inicio:"", fim:"" };
     let graficos = {};
     let config = { limiteMensal:0, reservaDesejada:0 };
+    let cdb = { valorAplicado:0, dataAplicacao:dataHoje(), cdiAnual:14.40, percentualCdi:100, prazoMeses:12, modo:"liquido" };
 
     const $ = id => document.getElementById(id);
 
@@ -794,6 +852,7 @@ using (auth.uid() = user_id);`;
       $("data").value = dataHoje();
 
       carregarConfig();
+      carregarCDB();
 
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth:{
@@ -942,8 +1001,9 @@ using (auth.uid() = user_id);`;
 
       const mes = $("filtroMes").value || mesAtual();
       const { inicio, fim } = intervaloMes(mes);
+      periodoAtual = { inicio, fim };
 
-      const { data, error } = await supabaseClient
+      const consultaMes = supabaseClient
         .from(TABLE)
         .select("*")
         .gte("data", inicio)
@@ -951,12 +1011,27 @@ using (auth.uid() = user_id);`;
         .order("data", { ascending:false })
         .order("created_at", { ascending:false });
 
-      if(error){
-        aviso("Erro ao carregar: " + traduzErro(error.message));
+      const consultaHistorico = supabaseClient
+        .from(TABLE)
+        .select("*")
+        .lte("data", fim)
+        .order("data", { ascending:false });
+
+      const [resMes, resHistorico] = await Promise.all([consultaMes, consultaHistorico]);
+
+      if(resMes.error){
+        aviso("Erro ao carregar: " + traduzErro(resMes.error.message));
         return;
       }
 
-      lancamentos = data || [];
+      if(resHistorico.error){
+        aviso("Erro ao carregar histórico: " + traduzErro(resHistorico.error.message));
+        historicoAteFim = resMes.data || [];
+      }else{
+        historicoAteFim = resHistorico.data || [];
+      }
+
+      lancamentos = resMes.data || [];
       renderizarTudo();
     }
 
@@ -1310,6 +1385,7 @@ using (auth.uid() = user_id);`;
       renderizarTabelas();
       renderizarAlertas(resumo);
       renderizarAnalise(resumo);
+      renderizarCDB(resumo);
       renderizarGraficos(resumo);
     }
 
@@ -1342,10 +1418,36 @@ using (auth.uid() = user_id);`;
         }
       });
 
-      const base = entradas || config.limiteMensal || 0;
+      const historico = historicoAteFim.length ? historicoAteFim : lancamentos;
+
+      const saldoAcumulado = historico.reduce((total, item) => {
+        const valor = Number(item.valor || 0);
+        return total + (item.tipo === "entrada" ? valor : -valor);
+      }, 0);
+
+      const saldoAnterior = historico
+        .filter(item => periodoAtual.inicio && item.data < periodoAtual.inicio)
+        .reduce((total, item) => {
+          const valor = Number(item.valor || 0);
+          return total + (item.tipo === "entrada" ? valor : -valor);
+        }, 0);
+
+      const saldoLivre = saldoAcumulado - Number(cdb.valorAplicado || 0);
+      const base = (saldoAnterior + entradas) || entradas || config.limiteMensal || 0;
       const percentualUso = base > 0 ? (gastos / base) * 100 : 0;
 
-      return { entradas, gastos, saldo, gastosPorCategoria, importancia, porDia, percentualUso };
+      return {
+        entradas,
+        gastos,
+        saldo,
+        saldoAnterior,
+        saldoAcumulado,
+        saldoLivre,
+        gastosPorCategoria,
+        importancia,
+        porDia,
+        percentualUso
+      };
     }
 
     function renderizarCards(resumo){
@@ -1353,6 +1455,8 @@ using (auth.uid() = user_id);`;
       $("totalGastos").textContent = moeda(resumo.gastos);
       $("saldoPrevisto").textContent = moeda(resumo.saldo);
       $("saldoPrevisto").className = "metric-value " + (resumo.saldo >= 0 ? "blue-text" : "red-text");
+      $("saldoAcumulado").textContent = moeda(resumo.saldoAcumulado);
+      $("saldoAcumulado").className = "metric-value " + (resumo.saldoAcumulado >= 0 ? "green-text" : "red-text");
 
       let risco = "Baixo";
       let texto = "Continue registrando seus gastos.";
@@ -1376,7 +1480,7 @@ using (auth.uid() = user_id);`;
       if(resumo.entradas === 0 && config.limiteMensal === 0){
         $("textoUso").textContent = "Adicione seu salário ou defina um limite mensal.";
       }else{
-        $("textoUso").textContent = resumo.percentualUso.toFixed(1) + "% do dinheiro do mês já foi usado.";
+        $("textoUso").textContent = resumo.percentualUso.toFixed(1) + "% do dinheiro disponível no mês já foi usado. Saldo anterior: " + moeda(resumo.saldoAnterior) + ".";
       }
     }
 
@@ -1563,6 +1667,109 @@ using (auth.uid() = user_id);`;
           <p>${escapar(texto)}</p>
         </div>
       `;
+    }
+
+    function carregarCDB(){
+      const salvo = localStorage.getItem("deshbor_cdb_bb_v1");
+
+      if(salvo){
+        try{
+          cdb = { ...cdb, ...JSON.parse(salvo) };
+        }catch(e){}
+      }
+
+      if($("cdbValor")) $("cdbValor").value = cdb.valorAplicado ? String(cdb.valorAplicado).replace(".", ",") : "";
+      if($("cdbData")) $("cdbData").value = cdb.dataAplicacao || dataHoje();
+      if($("cdbCdiAnual")) $("cdbCdiAnual").value = String(cdb.cdiAnual || 14.40).replace(".", ",");
+      if($("cdbPercentual")) $("cdbPercentual").value = String(cdb.percentualCdi || 100).replace(".", ",");
+      if($("cdbPrazo")) $("cdbPrazo").value = cdb.prazoMeses || 12;
+      if($("cdbModo")) $("cdbModo").value = cdb.modo || "liquido";
+    }
+
+    function lerCDBDaTela(){
+      const valorAplicado = paraNumero($("cdbValor")?.value || 0);
+      const dataAplicacao = $("cdbData")?.value || dataHoje();
+      const cdiAnual = paraNumero($("cdbCdiAnual")?.value || 14.40);
+      const percentualCdi = paraNumero($("cdbPercentual")?.value || 100);
+      const prazoMeses = Math.max(1, Number($("cdbPrazo")?.value || 12));
+      const modo = $("cdbModo")?.value || "liquido";
+
+      return { valorAplicado, dataAplicacao, cdiAnual, percentualCdi, prazoMeses, modo };
+    }
+
+    function usarSaldoNoCDB(){
+      const resumo = calcularResumo();
+      const valorDisponivel = Math.max(0, resumo.saldoAcumulado);
+      $("cdbValor").value = String(arredondar(valorDisponivel)).replace(".", ",");
+      renderizarCDB(resumo);
+      aviso("Saldo acumulado preenchido na caixa CDB.");
+    }
+
+    function salvarCDB(){
+      cdb = lerCDBDaTela();
+
+      if(cdb.valorAplicado < 0){
+        aviso("O valor do CDB não pode ser negativo.");
+        return;
+      }
+
+      localStorage.setItem("deshbor_cdb_bb_v1", JSON.stringify(cdb));
+      aviso("Caixa CDB salva neste navegador.");
+      renderizarTudo();
+    }
+
+    function limparCDB(){
+      cdb = { valorAplicado:0, dataAplicacao:dataHoje(), cdiAnual:14.40, percentualCdi:100, prazoMeses:12, modo:"liquido" };
+      localStorage.removeItem("deshbor_cdb_bb_v1");
+      carregarCDB();
+      renderizarTudo();
+      aviso("Caixa CDB limpa.");
+    }
+
+    function renderizarCDB(resumo){
+      if(!$("resultadoCDB")) return;
+
+      const dados = lerCDBDaTela();
+      const valor = Number(dados.valorAplicado || 0);
+      const taxaAnual = (Number(dados.cdiAnual || 0) / 100) * (Number(dados.percentualCdi || 0) / 100);
+      const taxaMensal = Math.pow(1 + taxaAnual, 1 / 12) - 1;
+      const brutoFinal = valor * Math.pow(1 + taxaMensal, dados.prazoMeses);
+      const rendimentoBruto = Math.max(0, brutoFinal - valor);
+      const dias = dados.prazoMeses * 30;
+      const irAliquota = aliquotaIR(dias);
+      const ir = rendimentoBruto * irAliquota;
+      const rendimentoLiquido = dados.modo === "bruto" ? rendimentoBruto : rendimentoBruto - ir;
+      const valorFinal = valor + rendimentoLiquido;
+      const rendaMediaMensal = dados.prazoMeses > 0 ? rendimentoLiquido / dados.prazoMeses : 0;
+      const saldoLivre = Number(resumo.saldoAcumulado || 0) - valor;
+      const avisoValor = valor > resumo.saldoAcumulado && resumo.saldoAcumulado > 0
+        ? "O valor simulado é maior que seu saldo acumulado atual."
+        : "Valor dentro do saldo acumulado, se você realmente separar esse dinheiro.";
+
+      if(!valor){
+        $("resultadoCDB").innerHTML = criarCardAnalise(
+          "warn",
+          "Caixa CDB vazia",
+          "Digite um valor, ou clique em Usar saldo acumulado para simular quanto renderia no CDB."
+        );
+        return;
+      }
+
+      $("resultadoCDB").innerHTML = [
+        criarCardAnalise("good", "Saldo acumulado atual", moeda(resumo.saldoAcumulado)),
+        criarCardAnalise(saldoLivre >= 0 ? "good" : "danger", "Saldo livre após separar CDB", moeda(saldoLivre)),
+        criarCardAnalise("good", "Valor estimado no final", moeda(valorFinal)),
+        criarCardAnalise("warn", "Renda média estimada", moeda(rendaMediaMensal) + " por mês em " + dados.prazoMeses + " meses."),
+        criarCardAnalise("warn", "Rendimento estimado", "Bruto: " + moeda(rendimentoBruto) + " • IR estimado: " + moeda(ir) + " • Líquido: " + moeda(rendimentoLiquido)),
+        criarCardAnalise(valor > resumo.saldoAcumulado && resumo.saldoAcumulado > 0 ? "danger" : "good", "Conferência", avisoValor)
+      ].join("");
+    }
+
+    function aliquotaIR(dias){
+      if(dias <= 180) return 0.225;
+      if(dias <= 360) return 0.20;
+      if(dias <= 720) return 0.175;
+      return 0.15;
     }
 
     function salvarConfiguracao(){
