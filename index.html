@@ -815,18 +815,13 @@
       <section id="ia" class="section">
         <div class="card">
           <h3>Assistente de IA (Claude)</h3>
-          <p class="desc">Envie o resumo do seu mês para a IA analisar gastos, riscos e sugerir melhorias. As chamadas saem diretamente do seu navegador para a API da Anthropic, então sua chave fica só neste dispositivo (nunca é enviada ao Supabase).</p>
+          <p class="desc">Envie o resumo do seu mês para a IA analisar gastos, riscos e sugerir melhorias. Esse recurso é compartilhado entre todas as contas do app: a chave da Anthropic fica guardada em segredo em uma function no Supabase, nunca no navegador.</p>
 
           <div class="ia-warning">
-            ⚠️ Por segurança: essa chave dá acesso à sua conta na Anthropic e fica salva no armazenamento local do navegador. Não use esse app em computadores públicos e não compartilhe a chave. Para uso em produção com várias pessoas, o ideal é chamar a API a partir de um servidor (ex: função serverless), nunca direto do navegador.
+            ℹ️ Disponível para qualquer pessoa logada no app. A chave da API não fica no seu navegador nem é visível no código-fonte — quem chama a IA é a function <code>ia-proxy</code> rodando no seu projeto Supabase. Existe um limite diário de chamadas por conta para evitar uso excessivo da chave compartilhada.
           </div>
 
           <div class="form-grid">
-            <div class="full">
-              <label>Chave da API Anthropic (sk-ant-...)</label>
-              <input id="iaApiKey" type="password" placeholder="sk-ant-api03-..." autocomplete="off" />
-            </div>
-
             <div>
               <label>Modelo</label>
               <select id="iaModelo">
@@ -835,18 +830,7 @@
                 <option value="claude-opus-4-8">Claude Opus 4.8 (mais avançado, custa mais)</option>
               </select>
             </div>
-
-            <div>
-              <label>&nbsp;</label>
-              <button class="btn primary" style="width:100%" type="button" onclick="salvarChaveIA()">Salvar chave neste navegador</button>
-            </div>
-
-            <div class="full" style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn" type="button" onclick="removerChaveIA()">Remover chave salva</button>
-            </div>
           </div>
-
-          <p class="desc" id="iaChaveStatus" style="margin-top:12px">Nenhuma chave salva neste navegador.</p>
         </div>
 
         <div class="dashboard-grid">
@@ -875,6 +859,17 @@
             <div id="iaDicasConteudo" class="ia-content hidden"></div>
             <div id="iaDicasMeta" class="ia-meta hidden"></div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Como publicar a function (uma vez só, feito por quem administra o app)</h3>
+          <p class="desc">Isso é configuração de backend, não precisa repetir por usuário. Depois de feito, todo mundo que fizer login já consegue usar a IA.</p>
+          <div class="sql-box">1. Instale a CLI do Supabase e faça login: supabase login
+2. Na pasta do projeto: supabase functions new ia-proxy
+3. Copie o código do arquivo ia-proxy-index.ts (baixado junto com este app) para supabase/functions/ia-proxy/index.ts
+4. Guarde a chave da Anthropic em segredo: supabase secrets set ANTHROPIC_API_KEY=sk-ant-sua-chave-aqui
+5. Publique: supabase functions deploy ia-proxy
+6. Rode o SQL atualizado (aba Configuração > SQL do banco) para criar as tabelas ia_analises e ia_uso</div>
         </div>
 
         <div class="card" style="margin-top:18px">
@@ -957,10 +952,7 @@
     const CONFIG_TABLE = "config_usuario";
     const IA_TABLE = "ia_analises";
     const CONFIG_KEY = "deshbor_config_cache_v5";
-    const IA_KEY_STORAGE = "deshbor_ia_api_key_v1";
     const IA_MODEL_STORAGE = "deshbor_ia_modelo_v1";
-    const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-    const ANTHROPIC_VERSION = "2023-06-01";
 
     const SQL_NECESSARIO = `-- DESHBOR - Supabase completo
 
@@ -1167,7 +1159,37 @@ to authenticated
 using (auth.uid() = user_id);
 
 create index if not exists idx_ia_analises_user_data
-on public.ia_analises(user_id, criado_em desc);`;
+on public.ia_analises(user_id, criado_em desc);
+
+-- Controle de uso diário da IA (usado pela Edge Function "ia-proxy" para
+-- limitar quantas chamadas cada conta pode fazer por dia, já que a chave
+-- da Anthropic agora é compartilhada entre todas as contas do app).
+-- Só a function grava aqui (com a service_role key, que ignora RLS),
+-- então não existe policy de insert/update para usuários comuns.
+
+create table if not exists public.ia_uso (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  dia date not null default current_date,
+  criado_em timestamptz not null default now()
+);
+
+alter table public.ia_uso enable row level security;
+
+drop policy if exists "Ler meu uso de ia" on public.ia_uso;
+
+create policy "Ler meu uso de ia"
+on public.ia_uso
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create index if not exists idx_ia_uso_user_dia
+on public.ia_uso(user_id, dia);
+
+-- IMPORTANTE: além deste SQL, a IA só funciona depois de publicar a Edge
+-- Function "ia-proxy" no seu projeto Supabase e configurar a secret
+-- ANTHROPIC_API_KEY. Veja o passo a passo na aba IA > "Como publicar".`;
 
     let supabaseClient = null;
     let usuarioAtual = null;
@@ -1196,7 +1218,10 @@ on public.ia_analises(user_id, criado_em desc);`;
         if($("iaModelo") && localStorage.getItem(IA_MODEL_STORAGE)){
           $("iaModelo").value = localStorage.getItem(IA_MODEL_STORAGE);
         }
-        atualizarStatusChaveIA();
+
+        if($("iaModelo")){
+          $("iaModelo").addEventListener("change", () => localStorage.setItem(IA_MODEL_STORAGE, $("iaModelo").value));
+        }
 
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
           auth:{
@@ -2420,58 +2445,17 @@ on public.ia_analises(user_id, criado_em desc);`;
     }
 
     // ===================== Assistente de IA (Claude) =====================
-    // Estas funções chamam a API da Anthropic diretamente do navegador,
-    // usando a chave que a própria pessoa cola na aba IA. É prático para uso
-    // pessoal, mas a chave fica exposta no navegador (ver aviso na tela).
-    // Para um produto com vários usuários, o correto é proxiar essa chamada
-    // por um backend/serverless que guarda a chave em segredo.
+    // A chave da Anthropic NÃO fica no navegador. Quem chama a API é a
+    // Edge Function "ia-proxy" no Supabase, usando uma secret configurada
+    // no próprio projeto (ANTHROPIC_API_KEY). O navegador só chama a
+    // function autenticado com o login do usuário — por isso o recurso
+    // funciona pra qualquer pessoa logada, sem precisar colar chave nenhuma.
+    // Veja as instruções de deploy da function na aba Configuração > SQL.
 
     function obterConfigIA(){
       return {
-        apiKey: localStorage.getItem(IA_KEY_STORAGE) || "",
         modelo: localStorage.getItem(IA_MODEL_STORAGE) || $("iaModelo")?.value || "claude-sonnet-4-6"
       };
-    }
-
-    function atualizarStatusChaveIA(){
-      const { apiKey, modelo } = obterConfigIA();
-      const status = $("iaChaveStatus");
-      if(!status) return;
-
-      if(apiKey){
-        const mascara = apiKey.slice(0, 10) + "…" + apiKey.slice(-4);
-        status.textContent = "Chave salva neste navegador (" + mascara + "). Modelo: " + modelo + ".";
-      }else{
-        status.textContent = "Nenhuma chave salva neste navegador.";
-      }
-    }
-
-    function salvarChaveIA(){
-      const chave = $("iaApiKey").value.trim();
-      const modelo = $("iaModelo").value;
-
-      if(!chave){
-        aviso("Digite uma chave da API antes de salvar.");
-        return;
-      }
-
-      if(!chave.startsWith("sk-ant-")){
-        aviso("Essa chave não parece uma chave da Anthropic (geralmente começa com sk-ant-). Confira antes de salvar.");
-        return;
-      }
-
-      localStorage.setItem(IA_KEY_STORAGE, chave);
-      localStorage.setItem(IA_MODEL_STORAGE, modelo);
-      $("iaApiKey").value = "";
-      atualizarStatusChaveIA();
-      aviso("Chave da IA salva neste navegador.");
-    }
-
-    function removerChaveIA(){
-      localStorage.removeItem(IA_KEY_STORAGE);
-      localStorage.removeItem(IA_MODEL_STORAGE);
-      atualizarStatusChaveIA();
-      aviso("Chave da IA removida deste navegador.");
     }
 
     function obterContextoFinanceiroIA(){
@@ -2511,49 +2495,40 @@ on public.ia_analises(user_id, criado_em desc);`;
     }
 
     async function chamarClaude({ system, mensagem, tools, maxTokens }){
-      const { apiKey, modelo } = obterConfigIA();
-
-      if(!apiKey){
-        throw new Error("Configure sua chave da API da Anthropic antes de usar a IA.");
+      if(!usuarioAtual){
+        throw new Error("Faça login para usar a IA.");
       }
 
-      const corpo = {
-        model: modelo,
-        max_tokens: maxTokens || 1200,
-        system,
-        messages: [{ role:"user", content: mensagem }]
-      };
+      const { modelo } = obterConfigIA();
 
-      if(tools) corpo.tools = tools;
-
-      const resposta = await fetch(ANTHROPIC_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": ANTHROPIC_VERSION,
-          // Necessário para permitir chamadas diretas do navegador; a chave
-          // continua sendo enviada só para api.anthropic.com.
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify(corpo)
+      const { data, error } = await supabaseClient.functions.invoke("ia-proxy", {
+        body: { system, mensagem, tools, maxTokens, modelo }
       });
 
-      const dados = await resposta.json();
-
-      if(!resposta.ok){
-        const mensagemErro = dados?.error?.message || ("Erro HTTP " + resposta.status);
-        throw new Error(mensagemErro);
+      if(error){
+        // supabaseClient já tenta anexar o token de login automaticamente;
+        // erros aqui geralmente são a function fora do ar, sem deploy, ou
+        // o limite diário de uso estourado.
+        const mensagemErro = error.context?.body ? await lerErroDaFunction(error) : error.message;
+        throw new Error(mensagemErro || "Não foi possível falar com a IA agora.");
       }
 
-      const texto = (dados.content || [])
-        .filter(bloco => bloco.type === "text")
-        .map(bloco => bloco.text)
-        .join("\n\n")
-        .trim();
+      if(data?.error){
+        throw new Error(data.error);
+      }
 
-      return texto || "A IA não retornou nenhum texto para essa solicitação.";
+      return data?.texto || "A IA não retornou nenhum texto para essa solicitação.";
     }
+
+    async function lerErroDaFunction(error){
+      try{
+        const corpo = await error.context.json();
+        return corpo?.error || error.message;
+      }catch(e){
+        return error.message;
+      }
+    }
+
 
     async function salvarHistoricoIA(tipo, conteudo){
       if(!usuarioAtual || !supabaseClient) return;
@@ -2579,9 +2554,8 @@ on public.ia_analises(user_id, criado_em desc);`;
       const meta = $("iaAnaliseMeta");
 
       try{
-        const { apiKey } = obterConfigIA();
-        if(!apiKey){
-          aviso("Configure sua chave da API da Anthropic primeiro (no topo desta aba).");
+        if(!usuarioAtual){
+          aviso("Faça login para usar a IA.");
           return;
         }
 
@@ -2621,9 +2595,8 @@ on public.ia_analises(user_id, criado_em desc);`;
       const meta = $("iaDicasMeta");
 
       try{
-        const { apiKey } = obterConfigIA();
-        if(!apiKey){
-          aviso("Configure sua chave da API da Anthropic primeiro (no topo desta aba).");
+        if(!usuarioAtual){
+          aviso("Faça login para usar a IA.");
           return;
         }
 
