@@ -310,6 +310,37 @@
       white-space:pre;
     }
 
+    .ia-warning{
+      border:1px solid rgba(245,158,11,.35);
+      background:rgba(245,158,11,.08);
+      border-radius:16px;
+      padding:13px 15px;
+      color:#fde68a;
+      font-size:12.5px;
+      line-height:1.5;
+      margin-top:14px;
+    }
+    .ia-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .spinner{
+      width:15px;height:15px;
+      border-radius:50%;
+      border:2px solid rgba(255,255,255,.25);
+      border-top-color:#fff;
+      display:inline-block;
+      vertical-align:middle;
+      margin-right:8px;
+      animation:girar .7s linear infinite;
+    }
+    @keyframes girar{ to{ transform:rotate(360deg); } }
+    .ia-meta{color:var(--muted);font-size:12px;margin-top:10px}
+    .ia-content{
+      margin-top:14px;
+      color:var(--text);
+      font-size:13.5px;
+      line-height:1.6;
+      white-space:pre-wrap;
+    }
+
     .toast{
       position:fixed;
       right:18px;
@@ -329,7 +360,7 @@
     @media(max-width:1050px){
       .app{grid-template-columns:1fr}
       .sidebar{position:relative;top:0;min-height:auto}
-      .menu{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .menu{grid-template-columns:repeat(3,minmax(0,1fr))}
       .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
       .dashboard-grid,.charts-grid{grid-template-columns:1fr}
     }
@@ -391,6 +422,7 @@
         <button class="active" onclick="abrirJanela('deshbor', this)">📊 Deshbor</button>
         <button onclick="abrirJanela('lancamentos', this)">➕ Lançamentos</button>
         <button onclick="abrirJanela('analise', this)">🧠 Análise</button>
+        <button onclick="abrirJanela('ia', this)">🤖 IA</button>
         <button onclick="abrirJanela('config', this)">⚙️ Configuração</button>
       </div>
 
@@ -401,7 +433,7 @@
 
       <div class="side-note">
         <h3>Novidade</h3>
-        <p>Agora o cadastro manual cria compras parceladas automaticamente, sem precisar mudar a tabela.</p>
+        <p>Nova aba 🤖 IA: peça uma avaliação do seu mês e dicas de mercado atualizadas (Selic/CDI). O limite mensal e a reserva desejada agora também sincronizam com sua conta, não só com este navegador.</p>
       </div>
     </aside>
 
@@ -609,7 +641,7 @@
             <p class="desc">Você pode editar, apagar, marcar arrependimento ou duplicar lançamento.</p>
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-              <input id="pesquisa" placeholder="Pesquisar por descrição ou categoria" oninput="renderizarTudo()" />
+              <input id="pesquisa" placeholder="Pesquisar por descrição ou categoria" oninput="pesquisaComDebounce()" />
               <select id="filtroTipo" onchange="renderizarTudo()" style="max-width:180px">
                 <option value="todos">Todos</option>
                 <option value="entrada">Entradas</option>
@@ -759,11 +791,83 @@
         </div>
       </section>
 
+      <section id="ia" class="section">
+        <div class="card">
+          <h3>Assistente de IA (Claude)</h3>
+          <p class="desc">Envie o resumo do seu mês para a IA analisar gastos, riscos e sugerir melhorias. As chamadas saem diretamente do seu navegador para a API da Anthropic, então sua chave fica só neste dispositivo (nunca é enviada ao Supabase).</p>
+
+          <div class="ia-warning">
+            ⚠️ Por segurança: essa chave dá acesso à sua conta na Anthropic e fica salva no armazenamento local do navegador. Não use esse app em computadores públicos e não compartilhe a chave. Para uso em produção com várias pessoas, o ideal é chamar a API a partir de um servidor (ex: função serverless), nunca direto do navegador.
+          </div>
+
+          <div class="form-grid">
+            <div class="full">
+              <label>Chave da API Anthropic (sk-ant-...)</label>
+              <input id="iaApiKey" type="password" placeholder="sk-ant-api03-..." autocomplete="off" />
+            </div>
+
+            <div>
+              <label>Modelo</label>
+              <select id="iaModelo">
+                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recomendado, equilíbrio de custo/qualidade)</option>
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (mais rápido e barato)</option>
+                <option value="claude-opus-4-8">Claude Opus 4.8 (mais avançado, custa mais)</option>
+              </select>
+            </div>
+
+            <div>
+              <label>&nbsp;</label>
+              <button class="btn primary" style="width:100%" type="button" onclick="salvarChaveIA()">Salvar chave neste navegador</button>
+            </div>
+
+            <div class="full" style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn" type="button" onclick="removerChaveIA()">Remover chave salva</button>
+            </div>
+          </div>
+
+          <p class="desc" id="iaChaveStatus" style="margin-top:12px">Nenhuma chave salva neste navegador.</p>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>Avaliação financeira com IA</h3>
+            <p class="desc">A IA olha seu resumo do mês, categorias, CDB e alertas, e devolve uma avaliação personalizada em português.</p>
+
+            <div class="ia-actions">
+              <button id="btnAnalisarIA" class="btn green" type="button" onclick="analisarFinancasIA()">Analisar meu mês com IA</button>
+            </div>
+
+            <div id="iaAnaliseVazia" class="empty" style="margin-top:14px">Configure sua chave da API acima e clique em "Analisar meu mês com IA".</div>
+            <div id="iaAnaliseConteudo" class="ia-content hidden"></div>
+            <div id="iaAnaliseMeta" class="ia-meta hidden"></div>
+          </div>
+
+          <div class="card">
+            <h3>Dicas de mercado atualizadas</h3>
+            <p class="desc">A IA pesquisa na internet a Selic, o CDI e dicas atuais de investimento/economia, e compara com a sua caixa CDB.</p>
+
+            <div class="ia-actions">
+              <button id="btnDicasIA" class="btn primary" type="button" onclick="buscarDicasMercadoIA()">Buscar dicas de mercado agora</button>
+            </div>
+
+            <div id="iaDicasVazia" class="empty" style="margin-top:14px">Clique em "Buscar dicas de mercado agora" para ver informações atualizadas.</div>
+            <div id="iaDicasConteudo" class="ia-content hidden"></div>
+            <div id="iaDicasMeta" class="ia-meta hidden"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Histórico de análises da IA</h3>
+          <p class="desc">Últimas análises salvas no Supabase da sua conta (se a tabela <code>ia_analises</code> existir — veja o SQL na aba Configuração).</p>
+          <div class="analysis-list" id="iaHistorico"></div>
+        </div>
+      </section>
+
       <section id="config" class="section">
         <div class="dashboard-grid">
           <div class="card">
-            <h3>Configurações locais</h3>
-            <p class="desc">Essas preferências ficam salvas neste navegador. A caixa CDB fica salva no Supabase.</p>
+            <h3>Configurações da conta</h3>
+            <p class="desc">Essas preferências ficam salvas no Supabase da sua conta e sincronizam entre dispositivos (com um cache local para abrir mais rápido).</p>
 
             <div class="form-grid">
               <div>
@@ -789,7 +893,7 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
               <button class="btn green" onclick="exportarJSON()">Exportar backup</button>
               <button class="btn" onclick="exportarCSV()">Exportar CSV</button>
-              <button class="btn primary" onclick="carregarLancamentos()">Recarregar Supabase</button>
+              <button class="btn primary" onclick="carregarLancamentos(); carregarConfigSupabase(); carregarCDBSupabase();">Recarregar Supabase</button>
             </div>
           </div>
         </div>
@@ -811,7 +915,13 @@
     const SUPABASE_KEY = "sb_publishable_w0tWZGjf4yLiQbn-paSfbA_ntx35b_h";
     const TABLE = "financas_lancamentos";
     const CDB_TABLE = "cdb_caixas";
-    const CONFIG_KEY = "deshbor_config_local_v4";
+    const CONFIG_TABLE = "config_usuario";
+    const IA_TABLE = "ia_analises";
+    const CONFIG_KEY = "deshbor_config_cache_v5";
+    const IA_KEY_STORAGE = "deshbor_ia_api_key_v1";
+    const IA_MODEL_STORAGE = "deshbor_ia_modelo_v1";
+    const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+    const ANTHROPIC_VERSION = "2023-06-01";
 
     const SQL_NECESSARIO = `-- DESHBOR - Supabase completo
 -- Rode este SQL no Supabase > SQL Editor.
@@ -866,6 +976,26 @@ using (auth.uid() = user_id);
 create index if not exists idx_financas_user_data
 on public.financas_lancamentos(user_id, data);
 
+-- Soma o saldo (entradas - gastos) do usuário logado até uma data,
+-- calculada dentro do banco. Isso evita ter que baixar todos os
+-- lançamentos do histórico só para somar o saldo acumulado no navegador,
+-- o que ficaria lento com o tempo. security definer + auth.uid() garante
+-- que cada pessoa só some os próprios lançamentos.
+
+create or replace function public.saldo_ate(p_fim date)
+returns numeric
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce(sum(case when tipo = 'entrada' then valor else -valor end), 0)
+  from public.financas_lancamentos
+  where user_id = auth.uid() and data <= p_fim;
+$$;
+
+grant execute on function public.saldo_ate(date) to authenticated;
+
 -- Caixa CDB Banco do Brasil
 -- Uma configuração de CDB por usuário, salva no Supabase.
 
@@ -915,12 +1045,96 @@ to authenticated
 using (auth.uid() = user_id);
 
 create index if not exists idx_cdb_caixas_user_id
-on public.cdb_caixas(user_id);`;
+on public.cdb_caixas(user_id);
+
+-- Configurações do usuário (limite mensal, reserva desejada)
+-- Antes ficava só no localStorage; agora sincroniza entre dispositivos.
+
+create table if not exists public.config_usuario (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique default auth.uid() references auth.users(id) on delete cascade,
+  limite_mensal numeric(12,2) not null default 0 check (limite_mensal >= 0),
+  reserva_desejada numeric(12,2) not null default 0 check (reserva_desejada >= 0),
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+alter table public.config_usuario enable row level security;
+
+drop policy if exists "Ler minha config" on public.config_usuario;
+drop policy if exists "Inserir minha config" on public.config_usuario;
+drop policy if exists "Atualizar minha config" on public.config_usuario;
+drop policy if exists "Apagar minha config" on public.config_usuario;
+
+create policy "Ler minha config"
+on public.config_usuario
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Inserir minha config"
+on public.config_usuario
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Atualizar minha config"
+on public.config_usuario
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Apagar minha config"
+on public.config_usuario
+for delete
+to authenticated
+using (auth.uid() = user_id);
+
+-- Histórico de análises da IA (opcional, só para guardar o que já foi gerado)
+
+create table if not exists public.ia_analises (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  tipo text not null check (tipo in ('analise_financeira', 'dicas_mercado')),
+  modelo text,
+  conteudo text not null,
+  criado_em timestamptz not null default now()
+);
+
+alter table public.ia_analises enable row level security;
+
+drop policy if exists "Ler minhas analises ia" on public.ia_analises;
+drop policy if exists "Inserir minhas analises ia" on public.ia_analises;
+drop policy if exists "Apagar minhas analises ia" on public.ia_analises;
+
+create policy "Ler minhas analises ia"
+on public.ia_analises
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Inserir minhas analises ia"
+on public.ia_analises
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Apagar minhas analises ia"
+on public.ia_analises
+for delete
+to authenticated
+using (auth.uid() = user_id);
+
+create index if not exists idx_ia_analises_user_data
+on public.ia_analises(user_id, criado_em desc);`;
 
     let supabaseClient = null;
     let usuarioAtual = null;
     let lancamentos = [];
     let historicoAteFim = [];
+    let saldoAcumuladoCalculado = null;
+    let saldoAnteriorCalculado = null;
     let periodoAtual = { inicio:"", fim:"" };
     let graficos = {};
     let config = { limiteMensal:0, reservaDesejada:0 };
@@ -938,6 +1152,11 @@ on public.cdb_caixas(user_id);`;
 
         carregarConfig();
         preencherCDBNaTela(cdb);
+
+        if($("iaModelo") && localStorage.getItem(IA_MODEL_STORAGE)){
+          $("iaModelo").value = localStorage.getItem(IA_MODEL_STORAGE);
+        }
+        atualizarStatusChaveIA();
 
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
           auth:{
@@ -960,6 +1179,7 @@ on public.cdb_caixas(user_id);`;
             usuarioAtual = data.session.user;
             mostrarApp();
             carregarCDBSupabase();
+            carregarConfigSupabase();
             carregarLancamentos();
           }else{
             mostrarLogin();
@@ -969,14 +1189,20 @@ on public.cdb_caixas(user_id);`;
           aviso("Falha ao conectar no Supabase: " + (err.message || err));
         });
 
+        // getSession() acima já trata a sessão inicial (INITIAL_SESSION).
+        // Aqui só reagimos a mudanças reais: login, logout e refresh de token,
+        // evitando carregar tudo duas vezes na primeira abertura da página.
         supabaseClient.auth.onAuthStateChange((evento, sessao) => {
+          if(evento === "INITIAL_SESSION") return;
+
           usuarioAtual = sessao?.user || null;
 
           if(usuarioAtual){
             mostrarApp();
             carregarCDBSupabase();
+            carregarConfigSupabase();
             carregarLancamentos();
-          }else if(evento !== "INITIAL_SESSION"){
+          }else{
             mostrarLogin();
           }
         });
@@ -1121,27 +1347,49 @@ on public.cdb_caixas(user_id);`;
         .order("data", { ascending:false })
         .order("created_at", { ascending:false });
 
-      const consultaHistorico = supabaseClient
-        .from(TABLE)
-        .select("*")
-        .lte("data", fim)
-        .order("data", { ascending:false });
-
-      const [resMes, resHistorico] = await Promise.all([consultaMes, consultaHistorico]);
+      const resMes = await consultaMes;
 
       if(resMes.error){
         aviso("Erro ao carregar: " + traduzErro(resMes.error.message));
         return;
       }
 
-      if(resHistorico.error){
-        aviso("Erro ao carregar histórico: " + traduzErro(resHistorico.error.message));
-        historicoAteFim = resMes.data || [];
+      lancamentos = resMes.data || [];
+
+      // Saldo acumulado (histórico completo) e saldo anterior ao mês:
+      // tentamos usar a função saldo_ate(data) no Supabase, que soma tudo
+      // no banco (rápido, não baixa a tabela inteira). Se essa função ainda
+      // não existir (SQL antigo), caímos para o método antigo de baixar
+      // todos os lançamentos até o fim do mês e somar no navegador.
+      const diaAnterior = adicionarDias(inicio, -1);
+
+      const [rpcAcumulado, rpcAnterior] = await Promise.all([
+        supabaseClient.rpc("saldo_ate", { p_fim: fim }),
+        supabaseClient.rpc("saldo_ate", { p_fim: diaAnterior })
+      ]);
+
+      if(!rpcAcumulado.error && !rpcAnterior.error){
+        saldoAcumuladoCalculado = Number(rpcAcumulado.data || 0);
+        saldoAnteriorCalculado = Number(rpcAnterior.data || 0);
+        historicoAteFim = [];
       }else{
-        historicoAteFim = resHistorico.data || [];
+        const resHistorico = await supabaseClient
+          .from(TABLE)
+          .select("tipo,valor,data")
+          .lte("data", fim)
+          .order("data", { ascending:false });
+
+        if(resHistorico.error){
+          aviso("Erro ao carregar histórico: " + traduzErro(resHistorico.error.message));
+          historicoAteFim = lancamentos;
+        }else{
+          historicoAteFim = resHistorico.data || [];
+        }
+
+        saldoAcumuladoCalculado = null;
+        saldoAnteriorCalculado = null;
       }
 
-      lancamentos = resMes.data || [];
       renderizarTudo();
     }
 
@@ -1382,7 +1630,11 @@ on public.cdb_caixas(user_id);`;
       }
 
       const normalizado = texto.toLowerCase();
-      const valorEncontrado = normalizado.match(/(?:r\$\s*)?(\d+(?:[,.]\d{1,2})?)/);
+      // Tenta primeiro números com separador de milhar (ex: "2.500,00"),
+      // e só depois números simples (ex: "2500,00", "40", "35.50").
+      // A ordem evita cortar valores grandes no meio (bug antigo: "2.500,00"
+      // virava "2,50").
+      const valorEncontrado = normalizado.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[,.]\d{1,2})?)/);
 
       if(!valorEncontrado){
         aviso("Não encontrei o valor. Exemplo: mercado 30");
@@ -1485,6 +1737,7 @@ on public.cdb_caixas(user_id);`;
         deshbor:["DESHBOR","Resumo visual do seu dinheiro, gastos, entradas e riscos."],
         lancamentos:["Lançamentos","Cadastre salário, compras, mercado, jogos, delivery e outros gastos."],
         analise:["Análise financeira","Veja o que não deveria ter comprado e como contornar."],
+        ia:["Inteligência Artificial","Peça para a IA avaliar seu mês e trazer dicas de mercado atualizadas."],
         config:["Configuração","Ajuste limite mensal, backup e SQL do Supabase."]
       };
 
@@ -1492,6 +1745,17 @@ on public.cdb_caixas(user_id);`;
       $("subtituloPagina").textContent = titulos[id][1];
 
       setTimeout(renderizarTudo, 80);
+
+      if(id === "ia") carregarHistoricoIA();
+    }
+
+    let temporizadorPesquisa = null;
+
+    function pesquisaComDebounce(){
+      // Evita re-renderizar tabelas, gráficos e cards a cada tecla digitada;
+      // espera uma pequena pausa na digitação antes de atualizar a tela.
+      clearTimeout(temporizadorPesquisa);
+      temporizadorPesquisa = setTimeout(renderizarTabelas, 220);
     }
 
     function renderizarTudo(){
@@ -1533,19 +1797,32 @@ on public.cdb_caixas(user_id);`;
         }
       });
 
-      const historico = historicoAteFim.length ? historicoAteFim : lancamentos;
+      let saldoAcumulado;
+      let saldoAnterior;
 
-      const saldoAcumulado = historico.reduce((total, item) => {
-        const valor = Number(item.valor || 0);
-        return total + (item.tipo === "entrada" ? valor : -valor);
-      }, 0);
+      if(saldoAcumuladoCalculado !== null && saldoAnteriorCalculado !== null){
+        // Veio da função saldo_ate() no Supabase (rápido e sempre correto,
+        // mesmo com muitos anos de lançamentos).
+        saldoAcumulado = saldoAcumuladoCalculado;
+        saldoAnterior = saldoAnteriorCalculado;
+      }else{
+        // Modo de compatibilidade: soma no navegador usando o histórico
+        // completo baixado (funciona sem a função saldo_ate, mas fica mais
+        // lento à medida que o histórico cresce).
+        const historico = historicoAteFim.length ? historicoAteFim : lancamentos;
 
-      const saldoAnterior = historico
-        .filter(item => periodoAtual.inicio && item.data < periodoAtual.inicio)
-        .reduce((total, item) => {
+        saldoAcumulado = historico.reduce((total, item) => {
           const valor = Number(item.valor || 0);
           return total + (item.tipo === "entrada" ? valor : -valor);
         }, 0);
+
+        saldoAnterior = historico
+          .filter(item => periodoAtual.inicio && item.data < periodoAtual.inicio)
+          .reduce((total, item) => {
+            const valor = Number(item.valor || 0);
+            return total + (item.tipo === "entrada" ? valor : -valor);
+          }, 0);
+      }
 
       const saldoLivre = saldoAcumulado - Number(cdb.valorAplicado || 0);
       const base = (saldoAnterior + entradas) || entradas || config.limiteMensal || 0;
@@ -2010,26 +2287,358 @@ on public.cdb_caixas(user_id);`;
       return 0.15;
     }
 
-    function salvarConfiguracao(){
+    async function salvarConfiguracao(){
       config.limiteMensal = paraNumero($("limiteMensal").value);
       config.reservaDesejada = paraNumero($("reservaDesejada").value);
+
+      if(config.limiteMensal < 0 || config.reservaDesejada < 0){
+        aviso("Os valores de configuração não podem ser negativos.");
+        return;
+      }
+
       localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 
-      aviso("Configuração salva.");
+      if(!usuarioAtual || !supabaseClient){
+        aviso("Configuração salva neste navegador. Faça login para sincronizar entre dispositivos.");
+        renderizarTudo();
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from(CONFIG_TABLE)
+        .upsert({
+          user_id:usuarioAtual.id,
+          limite_mensal:config.limiteMensal,
+          reserva_desejada:config.reservaDesejada,
+          updated_at:new Date().toISOString()
+        }, { onConflict:"user_id" });
+
+      if(error){
+        // Se a tabela ainda não existir no Supabase, mantemos o valor local
+        // e avisamos com uma mensagem clara em vez de travar o app.
+        aviso("Configuração salva neste navegador. Não deu para sincronizar: " + traduzErro(error.message));
+        renderizarTudo();
+        return;
+      }
+
+      aviso("Configuração salva e sincronizada com sua conta.");
       renderizarTudo();
     }
 
     function carregarConfig(){
+      // Carrega primeiro do cache local para a tela abrir instantaneamente;
+      // depois, se houver login, carregarConfigSupabase() sobrescreve com
+      // o valor mais atual salvo na conta.
       const configSalva = localStorage.getItem(CONFIG_KEY);
 
       if(configSalva){
         try{
-          config = JSON.parse(configSalva);
+          config = { ...config, ...JSON.parse(configSalva) };
         }catch(e){}
       }
 
-      $("limiteMensal").value = config.limiteMensal ? String(config.limiteMensal).replace(".", ",") : "";
-      $("reservaDesejada").value = config.reservaDesejada ? String(config.reservaDesejada).replace(".", ",") : "";
+      preencherConfigNaTela(config);
+    }
+
+    async function carregarConfigSupabase(){
+      if(!usuarioAtual || !supabaseClient) return;
+
+      const { data, error } = await supabaseClient
+        .from(CONFIG_TABLE)
+        .select("*")
+        .eq("user_id", usuarioAtual.id)
+        .maybeSingle();
+
+      if(error){
+        // Tabela pode não existir ainda para quem não rodou o SQL novo;
+        // nesse caso seguimos usando só o valor local, sem quebrar o app.
+        return;
+      }
+
+      if(data){
+        config = {
+          limiteMensal:Number(data.limite_mensal || 0),
+          reservaDesejada:Number(data.reserva_desejada || 0)
+        };
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        preencherConfigNaTela(config);
+        renderizarTudo();
+      }
+    }
+
+    function preencherConfigNaTela(dados){
+      if($("limiteMensal")) $("limiteMensal").value = dados.limiteMensal ? String(dados.limiteMensal).replace(".", ",") : "";
+      if($("reservaDesejada")) $("reservaDesejada").value = dados.reservaDesejada ? String(dados.reservaDesejada).replace(".", ",") : "";
+    }
+
+    // ===================== Assistente de IA (Claude) =====================
+    // Estas funções chamam a API da Anthropic diretamente do navegador,
+    // usando a chave que a própria pessoa cola na aba IA. É prático para uso
+    // pessoal, mas a chave fica exposta no navegador (ver aviso na tela).
+    // Para um produto com vários usuários, o correto é proxiar essa chamada
+    // por um backend/serverless que guarda a chave em segredo.
+
+    function obterConfigIA(){
+      return {
+        apiKey: localStorage.getItem(IA_KEY_STORAGE) || "",
+        modelo: localStorage.getItem(IA_MODEL_STORAGE) || $("iaModelo")?.value || "claude-sonnet-4-6"
+      };
+    }
+
+    function atualizarStatusChaveIA(){
+      const { apiKey, modelo } = obterConfigIA();
+      const status = $("iaChaveStatus");
+      if(!status) return;
+
+      if(apiKey){
+        const mascara = apiKey.slice(0, 10) + "…" + apiKey.slice(-4);
+        status.textContent = "Chave salva neste navegador (" + mascara + "). Modelo: " + modelo + ".";
+      }else{
+        status.textContent = "Nenhuma chave salva neste navegador.";
+      }
+    }
+
+    function salvarChaveIA(){
+      const chave = $("iaApiKey").value.trim();
+      const modelo = $("iaModelo").value;
+
+      if(!chave){
+        aviso("Digite uma chave da API antes de salvar.");
+        return;
+      }
+
+      if(!chave.startsWith("sk-ant-")){
+        aviso("Essa chave não parece uma chave da Anthropic (geralmente começa com sk-ant-). Confira antes de salvar.");
+        return;
+      }
+
+      localStorage.setItem(IA_KEY_STORAGE, chave);
+      localStorage.setItem(IA_MODEL_STORAGE, modelo);
+      $("iaApiKey").value = "";
+      atualizarStatusChaveIA();
+      aviso("Chave da IA salva neste navegador.");
+    }
+
+    function removerChaveIA(){
+      localStorage.removeItem(IA_KEY_STORAGE);
+      localStorage.removeItem(IA_MODEL_STORAGE);
+      atualizarStatusChaveIA();
+      aviso("Chave da IA removida deste navegador.");
+    }
+
+    function obterContextoFinanceiroIA(){
+      const resumo = calcularResumo();
+      const mes = $("filtroMes")?.value || mesAtual();
+
+      const categorias = Object.entries(resumo.gastosPorCategoria)
+        .sort((a,b) => b[1] - a[1])
+        .map(([categoria, valor]) => `${categoria}: ${moeda(valor)}`);
+
+      const topGastos = lancamentos
+        .filter(item => item.tipo === "gasto")
+        .sort((a,b) => Number(b.valor) - Number(a.valor))
+        .slice(0, 8)
+        .map(item => `${formatarData(item.data)} - ${item.descricao} (${item.categoria}, ${item.importancia}): ${moeda(item.valor)}`);
+
+      const dadosCDB = lerCDBDaTela();
+
+      return {
+        mes,
+        entradas: resumo.entradas,
+        gastos: resumo.gastos,
+        saldoDoMes: resumo.saldo,
+        saldoAcumulado: resumo.saldoAcumulado,
+        percentualUsoDoDinheiro: Number(resumo.percentualUso.toFixed(1)),
+        limiteMensalConfigurado: config.limiteMensal || 0,
+        reservaDesejada: config.reservaDesejada || 0,
+        gastosPorCategoria: categorias,
+        maioresGastos: topGastos,
+        caixaCDB: {
+          valorReservado: dadosCDB.valorAplicado,
+          cdiAnualPercent: dadosCDB.cdiAnual,
+          percentualDoCdi: dadosCDB.percentualCdi,
+          prazoMeses: dadosCDB.prazoMeses
+        }
+      };
+    }
+
+    async function chamarClaude({ system, mensagem, tools, maxTokens }){
+      const { apiKey, modelo } = obterConfigIA();
+
+      if(!apiKey){
+        throw new Error("Configure sua chave da API da Anthropic antes de usar a IA.");
+      }
+
+      const corpo = {
+        model: modelo,
+        max_tokens: maxTokens || 1200,
+        system,
+        messages: [{ role:"user", content: mensagem }]
+      };
+
+      if(tools) corpo.tools = tools;
+
+      const resposta = await fetch(ANTHROPIC_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": ANTHROPIC_VERSION,
+          // Necessário para permitir chamadas diretas do navegador; a chave
+          // continua sendo enviada só para api.anthropic.com.
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify(corpo)
+      });
+
+      const dados = await resposta.json();
+
+      if(!resposta.ok){
+        const mensagemErro = dados?.error?.message || ("Erro HTTP " + resposta.status);
+        throw new Error(mensagemErro);
+      }
+
+      const texto = (dados.content || [])
+        .filter(bloco => bloco.type === "text")
+        .map(bloco => bloco.text)
+        .join("\n\n")
+        .trim();
+
+      return texto || "A IA não retornou nenhum texto para essa solicitação.";
+    }
+
+    async function salvarHistoricoIA(tipo, conteudo){
+      if(!usuarioAtual || !supabaseClient) return;
+
+      const { modelo } = obterConfigIA();
+
+      // Melhor esforço: se a tabela ia_analises não existir ainda, apenas
+      // ignoramos o erro em silêncio — a análise já foi mostrada na tela.
+      await supabaseClient.from(IA_TABLE).insert({
+        user_id: usuarioAtual.id,
+        tipo,
+        modelo,
+        conteudo
+      }).then(({ error }) => {
+        if(error) console.warn("Não foi possível salvar o histórico da IA:", error.message);
+      });
+    }
+
+    async function analisarFinancasIA(){
+      const botao = $("btnAnalisarIA");
+      const vazio = $("iaAnaliseVazia");
+      const conteudo = $("iaAnaliseConteudo");
+      const meta = $("iaAnaliseMeta");
+
+      try{
+        const { apiKey } = obterConfigIA();
+        if(!apiKey){
+          aviso("Configure sua chave da API da Anthropic primeiro (no topo desta aba).");
+          return;
+        }
+
+        botao.disabled = true;
+        botao.innerHTML = '<span class="spinner"></span> Analisando...';
+
+        const contexto = obterContextoFinanceiroIA();
+
+        const system = "Você é um consultor financeiro pessoal, cuidadoso e direto, especializado em finanças de pessoas físicas no Brasil. Responda sempre em português do Brasil, em texto corrido organizado por pequenos títulos, sem inventar números que não estejam no contexto enviado. Seja honesto sobre riscos, mas mantenha um tom respeitoso e construtivo.";
+
+        const mensagem = "Aqui está o resumo financeiro do usuário no mês " + contexto.mes + ", em JSON:\n\n" +
+          JSON.stringify(contexto, null, 2) +
+          "\n\nCom base só nesses dados, escreva uma avaliação com: 1) um resumo rápido da situação do mês; 2) os principais riscos ou pontos de atenção; 3) de 3 a 5 recomendações práticas e específicas (considerando as categorias e maiores gastos listados); 4) uma opinião sobre a caixa CDB descrita (sem recomendar produtos específicos de investimento, apenas comentando a estratégia de reservar dinheiro). Não invente lançamentos que não foram informados.";
+
+        const texto = await chamarClaude({ system, mensagem, maxTokens: 1400 });
+
+        vazio.classList.add("hidden");
+        conteudo.classList.remove("hidden");
+        conteudo.textContent = texto;
+        meta.classList.remove("hidden");
+        meta.textContent = "Gerado agora com " + obterConfigIA().modelo + ". Baseado apenas nos dados deste app.";
+
+        await salvarHistoricoIA("analise_financeira", texto);
+        await carregarHistoricoIA();
+      }catch(err){
+        aviso("Erro ao chamar a IA: " + (err.message || err));
+      }finally{
+        botao.disabled = false;
+        botao.textContent = "Analisar meu mês com IA";
+      }
+    }
+
+    async function buscarDicasMercadoIA(){
+      const botao = $("btnDicasIA");
+      const vazio = $("iaDicasVazia");
+      const conteudo = $("iaDicasConteudo");
+      const meta = $("iaDicasMeta");
+
+      try{
+        const { apiKey } = obterConfigIA();
+        if(!apiKey){
+          aviso("Configure sua chave da API da Anthropic primeiro (no topo desta aba).");
+          return;
+        }
+
+        botao.disabled = true;
+        botao.innerHTML = '<span class="spinner"></span> Pesquisando...';
+
+        const dadosCDB = lerCDBDaTela();
+
+        const system = "Você é um assistente financeiro que pesquisa informações atualizadas sobre o mercado brasileiro (Selic, CDI, poupança, CDBs, Tesouro Direto) usando busca na web. Responda em português do Brasil, de forma objetiva, citando de onde tirou os números quando possível. Não dê recomendação de compra de ativos específicos nem garanta rentabilidade futura; foque em explicar o cenário atual e dar dicas gerais de organização financeira.";
+
+        const mensagem = "Pesquise as taxas atuais da Selic e do CDI no Brasil, e 2 ou 3 dicas atuais e práticas sobre onde costuma fazer sentido guardar dinheiro de reserva de emergência (poupança, CDB, Tesouro Selic) para uma pessoa física. " +
+          "Depois, comente rapidamente como essas taxas se comparam com a simulação de CDB que essa pessoa já configurou no app: CDI assumido de " + dadosCDB.cdiAnual + "% ao ano, a " + dadosCDB.percentualCdi + "% do CDI, por " + dadosCDB.prazoMeses + " meses. " +
+          "Deixe claro que isso não é uma recomendação de investimento personalizada.";
+
+        const texto = await chamarClaude({
+          system,
+          mensagem,
+          maxTokens: 1200,
+          tools: [{ type: "web_search_20250305", name: "web_search" }]
+        });
+
+        vazio.classList.add("hidden");
+        conteudo.classList.remove("hidden");
+        conteudo.textContent = texto;
+        meta.classList.remove("hidden");
+        meta.textContent = "Pesquisado agora com " + obterConfigIA().modelo + " + busca na web. Não é recomendação de investimento.";
+
+        await salvarHistoricoIA("dicas_mercado", texto);
+        await carregarHistoricoIA();
+      }catch(err){
+        aviso("Erro ao buscar dicas de mercado: " + (err.message || err));
+      }finally{
+        botao.disabled = false;
+        botao.textContent = "Buscar dicas de mercado agora";
+      }
+    }
+
+    async function carregarHistoricoIA(){
+      const lista = $("iaHistorico");
+      if(!lista || !usuarioAtual || !supabaseClient) return;
+
+      const { data, error } = await supabaseClient
+        .from(IA_TABLE)
+        .select("*")
+        .order("criado_em", { ascending:false })
+        .limit(6);
+
+      if(error){
+        lista.innerHTML = '<div class="empty">O histórico da IA aparece aqui depois que você rodar o SQL atualizado (tabela ia_analises) na aba Configuração.</div>';
+        return;
+      }
+
+      if(!data || data.length === 0){
+        lista.innerHTML = '<div class="empty">Nenhuma análise de IA salva ainda.</div>';
+        return;
+      }
+
+      lista.innerHTML = data.map(item => {
+        const titulo = item.tipo === "dicas_mercado" ? "Dicas de mercado" : "Análise financeira";
+        const dataFormatada = new Date(item.criado_em).toLocaleString("pt-BR");
+        const resumoTexto = item.conteudo.length > 220 ? item.conteudo.slice(0, 220) + "…" : item.conteudo;
+        return criarCardAnalise("good", titulo + " • " + dataFormatada, resumoTexto);
+      }).join("");
     }
 
     function renderizarGraficos(resumo){
@@ -2227,11 +2836,18 @@ on public.cdb_caixas(user_id);`;
       });
 
       const csv = linhas.map(linha =>
-        linha.map(campo => `"${String(campo ?? "").replaceAll('"', '""')}"`).join(";")
+        linha.map(campo => `"${protegerContraFormula(String(campo ?? "")).replaceAll('"', '""')}"`).join(";")
       ).join("\n");
 
       const arquivo = new Blob([csv], { type:"text/csv;charset=utf-8" });
       baixarArquivo(arquivo, "lancamentos-deshbor-supabase.csv");
+    }
+
+    function protegerContraFormula(texto){
+      // Se a descrição/categoria começar com =, +, -, @ ou tab, o Excel/Sheets
+      // pode interpretar como fórmula ao abrir o CSV. Prefixamos com um
+      // apóstrofo para forçar o valor a ser tratado como texto puro.
+      return /^[=+\-@\t]/.test(texto) ? "'" + texto : texto;
     }
 
     function baixarArquivo(blob, nome){
@@ -2245,6 +2861,12 @@ on public.cdb_caixas(user_id);`;
     function copiarSQL(){
       navigator.clipboard.writeText(SQL_NECESSARIO);
       aviso("SQL copiado.");
+    }
+
+    function adicionarDias(data, dias){
+      const [ano, mes, dia] = data.split("-").map(Number);
+      const alvo = new Date(ano, mes - 1, dia + dias);
+      return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2,"0")}-${String(alvo.getDate()).padStart(2,"0")}`;
     }
 
     function intervaloMes(mes){
@@ -2269,13 +2891,26 @@ on public.cdb_caixas(user_id);`;
 
     function paraNumero(valor){
       if(typeof valor === "number") return valor;
-      const texto = String(valor || "0").trim();
+      let texto = String(valor ?? "0").trim();
+
+      if(!texto) return 0;
 
       if(texto.includes(",")){
-        return Number(texto.replace(/\./g, "").replace(",", "."));
+        // Vírgula = separador decimal (padrão BR). Pontos antes dela são milhar.
+        // Ex: "1.500,90" -> 1500.90
+        texto = texto.replace(/\./g, "").replace(",", ".");
+      }else if(texto.includes(".")){
+        // Sem vírgula: um ponto pode ser decimal ("35.5") ou milhar ("1.500").
+        // Se o último bloco depois do ponto tiver 3 dígitos, tratamos como milhar.
+        const partes = texto.split(".");
+        const ultimaParte = partes[partes.length - 1];
+        const pareceMilhar = partes.length > 1 && ultimaParte.length === 3;
+
+        if(pareceMilhar) texto = partes.join("");
       }
 
-      return Number(texto);
+      const numero = Number(texto);
+      return Number.isFinite(numero) ? numero : 0;
     }
 
     function moeda(valor){
