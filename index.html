@@ -841,8 +841,9 @@
             <div class="ia-actions">
               <button id="btnAnalisarIA" class="btn green" type="button" onclick="analisarFinancasIA()">Analisar meu mês com IA</button>
             </div>
+            <p class="ia-meta" style="margin-top:8px">Pode levar até 1 minuto — várias IAs respondendo ao mesmo tempo.</p>
 
-            <div id="iaAnaliseVazia" class="empty" style="margin-top:14px">Configure sua chave da API acima e clique em "Analisar meu mês com IA".</div>
+            <div id="iaAnaliseVazia" class="empty" style="margin-top:14px">Clique em "Analisar meu mês com IA" para começar.</div>
             <div id="iaAnaliseConteudo" class="ia-content hidden"></div>
             <div id="iaAnaliseMeta" class="ia-meta hidden"></div>
           </div>
@@ -854,6 +855,7 @@
             <div class="ia-actions">
               <button id="btnDicasIA" class="btn primary" type="button" onclick="buscarDicasMercadoIA()">Buscar dicas de mercado agora</button>
             </div>
+            <p class="ia-meta" style="margin-top:8px">Pode levar até 1 minuto — a busca na web tem uma etapa a mais.</p>
 
             <div id="iaDicasVazia" class="empty" style="margin-top:14px">Clique em "Buscar dicas de mercado agora" para ver informações atualizadas.</div>
             <div id="iaDicasConteudo" class="ia-content hidden"></div>
@@ -2528,7 +2530,7 @@ on public.ia_uso(user_id, dia);
     // Chama a Edge Function com um tempo limite no próprio navegador. Se a
     // function travar por completo (em vez de só uma IA travar), o botão
     // não fica girando pra sempre — depois de 45s aparece um erro claro.
-    async function invocarIAProxyComTimeout(corpo, timeoutMs = 45000){
+    async function invocarIAProxyComTimeout(corpo, timeoutMs = 70000){
       let temporizador;
 
       const timeout = new Promise((_, rejeitar) => {
