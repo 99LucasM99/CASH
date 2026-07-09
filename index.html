@@ -2525,6 +2525,28 @@ on public.ia_uso(user_id, dia);
       };
     }
 
+    // Chama a Edge Function com um tempo limite no próprio navegador. Se a
+    // function travar por completo (em vez de só uma IA travar), o botão
+    // não fica girando pra sempre — depois de 45s aparece um erro claro.
+    async function invocarIAProxyComTimeout(corpo, timeoutMs = 45000){
+      let temporizador;
+
+      const timeout = new Promise((_, rejeitar) => {
+        temporizador = setTimeout(() => {
+          rejeitar(new Error("A IA demorou demais para responder (mais de " + Math.round(timeoutMs / 1000) + "s). Tente novamente em instantes."));
+        }, timeoutMs);
+      });
+
+      try{
+        return await Promise.race([
+          supabaseClient.functions.invoke("ia-proxy", { body: corpo }),
+          timeout
+        ]);
+      }finally{
+        clearTimeout(temporizador);
+      }
+    }
+
     async function chamarClaude({ system, mensagem, tools, maxTokens }){
       if(!usuarioAtual){
         throw new Error("Faça login para usar a IA.");
@@ -2532,9 +2554,7 @@ on public.ia_uso(user_id, dia);
 
       const { modelo } = obterConfigIA();
 
-      const { data, error } = await supabaseClient.functions.invoke("ia-proxy", {
-        body: { system, mensagem, tools, maxTokens, modelo, orquestrar: false }
-      });
+      const { data, error } = await invocarIAProxyComTimeout({ system, mensagem, tools, maxTokens, modelo, orquestrar: false });
 
       if(error){
         // supabaseClient já tenta anexar o token de login automaticamente;
@@ -2561,9 +2581,7 @@ on public.ia_uso(user_id, dia);
 
       const { modelo } = obterConfigIA();
 
-      const { data, error } = await supabaseClient.functions.invoke("ia-proxy", {
-        body: { system, mensagem, maxTokens, modelo, orquestrar: true }
-      });
+      const { data, error } = await invocarIAProxyComTimeout({ system, mensagem, maxTokens, modelo, orquestrar: true });
 
       if(error){
         const mensagemErro = error.context?.body ? await lerErroDaFunction(error) : error.message;
