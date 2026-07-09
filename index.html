@@ -818,7 +818,7 @@
           <p class="desc">Envie o resumo do seu mês para a IA analisar gastos, riscos e sugerir melhorias. Esse recurso é compartilhado entre todas as contas do app: a chave da Anthropic fica guardada em segredo em uma function no Supabase, nunca no navegador.</p>
 
           <div class="ia-warning">
-            ℹ️ Disponível para qualquer pessoa logada no app. A chave da API não fica no seu navegador nem é visível no código-fonte — quem chama a IA é a function <code>ia-proxy</code> rodando no seu projeto Supabase. Existe um limite diário de chamadas por conta para evitar uso excessivo da chave compartilhada.
+            ℹ️ Disponível para qualquer pessoa logada no app. Nenhuma chave de API fica no seu navegador nem no código-fonte — quem chama as IAs é a function <code>ia-proxy</code> rodando no seu projeto Supabase, usando as chaves guardadas nas Secrets. A "Avaliação financeira" chama o Claude + qualquer outra IA que você configurar (Groq, OpenRouter, etc. — veja o passo a passo mais abaixo) e mostra a resposta de cada uma. Existe um limite diário de chamadas por conta para evitar uso excessivo das chaves compartilhadas.
           </div>
 
           <div class="form-grid">
@@ -835,8 +835,8 @@
 
         <div class="dashboard-grid">
           <div class="card">
-            <h3>Avaliação financeira com IA</h3>
-            <p class="desc">A IA olha seu resumo do mês, categorias, CDB e alertas, e devolve uma avaliação personalizada em português.</p>
+            <h3>Avaliação financeira com IA (orquestra)</h3>
+            <p class="desc">Manda o resumo do seu mês para o Claude e para as outras IAs que forem configuradas nas secrets do Supabase, ao mesmo tempo. Cada uma responde separado, então você compara as opiniões.</p>
 
             <div class="ia-actions">
               <button id="btnAnalisarIA" class="btn green" type="button" onclick="analisarFinancasIA()">Analisar meu mês com IA</button>
@@ -863,13 +863,44 @@
 
         <div class="card" style="margin-top:18px">
           <h3>Como publicar a function (uma vez só, feito por quem administra o app)</h3>
-          <p class="desc">Isso é configuração de backend, não precisa repetir por usuário. Depois de feito, todo mundo que fizer login já consegue usar a IA.</p>
-          <div class="sql-box">1. Instale a CLI do Supabase e faça login: supabase login
-2. Na pasta do projeto: supabase functions new ia-proxy
-3. Copie o código do arquivo ia-proxy-index.ts (baixado junto com este app) para supabase/functions/ia-proxy/index.ts
-4. Guarde a chave da Anthropic em segredo: supabase secrets set ANTHROPIC_API_KEY=sk-ant-sua-chave-aqui
-5. Publique: supabase functions deploy ia-proxy
-6. Rode o SQL atualizado (aba Configuração > SQL do banco) para criar as tabelas ia_analises e ia_uso</div>
+          <p class="desc">Isso é configuração de backend, não precisa repetir por usuário. Depois de feito, todo mundo que fizer login já consegue usar a IA. O arquivo de código (ia-proxy-index.ts) é JavaScript/TypeScript — ele vai na tela de Edge Functions, NUNCA no SQL Editor.</p>
+          <div class="sql-box">Caminho mais simples (pelo navegador, sem instalar nada):
+1. No painel do Supabase, abra "Edge Functions" no menu lateral
+2. Clique em "Deploy a new function" e escolha "Via Editor"
+3. Nomeie a function exatamente como: ia-proxy
+4. Apague o código de exemplo e cole o conteúdo do arquivo ia-proxy-index.ts
+5. Clique em "Deploy function"
+6. Ainda em Edge Functions, abra a aba "Secrets" e adicione:
+   nome: ANTHROPIC_API_KEY   valor: sua chave (começa com sk-ant-)
+7. Volte para o SQL Editor (aba Configuração > SQL do banco) e rode o SQL,
+   para criar as tabelas ia_analises e ia_uso
+
+Caminho alternativo (se preferir usar terminal/CLI):
+1. supabase login
+2. supabase functions new ia-proxy
+3. Substitua o arquivo gerado pelo conteúdo de ia-proxy-index.ts
+4. supabase secrets set ANTHROPIC_API_KEY=sk-ant-sua-chave-aqui
+5. supabase functions deploy ia-proxy</div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Como adicionar mais uma IA na orquestra</h3>
+          <p class="desc">Sem precisar editar o código de novo. Repita isso pra cada API nova que você achar (troque o número 2 por 3, 4 ou 5 na próxima vez).</p>
+          <div class="sql-box">1. Confirme que a API que você achou usa o formato "chat/completions"
+   da OpenAI (é o formato mais comum em APIs gratuitas: Groq, OpenRouter,
+   Together e a maioria dos espelhos de IA por aí)
+2. No Supabase, vá em Edge Functions > ia-proxy > Secrets
+3. Adicione estas 4 secrets (Add another > Save):
+   PROVEDOR_2_NOME    = um nome pra aparecer na tela, ex: Groq (Llama)
+   PROVEDOR_2_URL     = a URL do endpoint de chat dessa API
+   PROVEDOR_2_KEY     = a chave de API dela
+   PROVEDOR_2_MODELO  = o nome do modelo, ex: llama-3.3-70b-versatile
+4. Pronto — na próxima vez que clicar em "Analisar meu mês com IA",
+   essa API já aparece na lista de respostas, ao lado do Claude
+
+Se a API que você achou NÃO for desse formato (ex: Gemini nativo do
+Google usa outro formato), me manda o nome dela que eu ajusto o código
+do ia-proxy pra aceitar esse caso específico.</div>
         </div>
 
         <div class="card" style="margin-top:18px">
@@ -2502,7 +2533,7 @@ on public.ia_uso(user_id, dia);
       const { modelo } = obterConfigIA();
 
       const { data, error } = await supabaseClient.functions.invoke("ia-proxy", {
-        body: { system, mensagem, tools, maxTokens, modelo }
+        body: { system, mensagem, tools, maxTokens, modelo, orquestrar: false }
       });
 
       if(error){
@@ -2518,6 +2549,56 @@ on public.ia_uso(user_id, dia);
       }
 
       return data?.texto || "A IA não retornou nenhum texto para essa solicitação.";
+    }
+
+    // Chama a "orquestra": Claude + todos os provedores extras configurados
+    // nas secrets da function (PROVEDOR_2_*, PROVEDOR_3_*...), em paralelo,
+    // e devolve a resposta (ou erro) de cada um separadamente.
+    async function chamarOrquestraIA({ system, mensagem, maxTokens }){
+      if(!usuarioAtual){
+        throw new Error("Faça login para usar a IA.");
+      }
+
+      const { modelo } = obterConfigIA();
+
+      const { data, error } = await supabaseClient.functions.invoke("ia-proxy", {
+        body: { system, mensagem, maxTokens, modelo, orquestrar: true }
+      });
+
+      if(error){
+        const mensagemErro = error.context?.body ? await lerErroDaFunction(error) : error.message;
+        throw new Error(mensagemErro || "Não foi possível falar com a IA agora.");
+      }
+
+      if(data?.error){
+        throw new Error(data.error);
+      }
+
+      return data?.respostas || [];
+    }
+
+    function renderizarRespostasOrquestra(respostas){
+      if(!respostas.length){
+        return criarCardAnalise("warn", "Nenhuma IA respondeu", "Confira se a Edge Function ia-proxy está publicada e com as secrets configuradas.");
+      }
+
+      return respostas.map(r => {
+        if(r.erro){
+          return `
+            <div class="analysis-card danger">
+              <strong>${escapar(r.provedor)}</strong>
+              <p>Não respondeu: ${escapar(r.erro)}</p>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="analysis-card good">
+            <strong>${escapar(r.provedor)}</strong>
+            <p style="white-space:pre-wrap">${escapar(r.texto)}</p>
+          </div>
+        `;
+      }).join("");
     }
 
     async function lerErroDaFunction(error){
@@ -2566,19 +2647,23 @@ on public.ia_uso(user_id, dia);
 
         const system = "Você é um consultor financeiro pessoal, cuidadoso e direto, especializado em finanças de pessoas físicas no Brasil. Responda sempre em português do Brasil, em texto corrido organizado por pequenos títulos, sem inventar números que não estejam no contexto enviado. Seja honesto sobre riscos, mas mantenha um tom respeitoso e construtivo.";
 
-        const mensagem = "Aqui está o resumo financeiro do usuário no mês " + contexto.mes + ", em JSON:\n\n" +
+        const texto = "Aqui está o resumo financeiro do usuário no mês " + contexto.mes + ", em JSON:\n\n" +
           JSON.stringify(contexto, null, 2) +
           "\n\nCom base só nesses dados, escreva uma avaliação com: 1) um resumo rápido da situação do mês; 2) os principais riscos ou pontos de atenção; 3) de 3 a 5 recomendações práticas e específicas (considerando as categorias e maiores gastos listados); 4) uma opinião sobre a caixa CDB descrita (sem recomendar produtos específicos de investimento, apenas comentando a estratégia de reservar dinheiro). Não invente lançamentos que não foram informados.";
 
-        const texto = await chamarClaude({ system, mensagem, maxTokens: 1400 });
+        const respostas = await chamarOrquestraIA({ system, mensagem: texto, maxTokens: 1400 });
 
         vazio.classList.add("hidden");
         conteudo.classList.remove("hidden");
-        conteudo.textContent = texto;
+        conteudo.innerHTML = renderizarRespostasOrquestra(respostas);
         meta.classList.remove("hidden");
-        meta.textContent = "Gerado agora com " + obterConfigIA().modelo + ". Baseado apenas nos dados deste app.";
+        meta.textContent = respostas.length + " IA(s) responderam agora. Baseado apenas nos dados deste app.";
 
-        await salvarHistoricoIA("analise_financeira", texto);
+        const resumoParaHistorico = respostas
+          .map(r => r.provedor + ": " + (r.erro ? "erro - " + r.erro : r.texto))
+          .join("\n\n---\n\n");
+
+        await salvarHistoricoIA("analise_financeira", resumoParaHistorico);
         await carregarHistoricoIA();
       }catch(err){
         aviso("Erro ao chamar a IA: " + (err.message || err));
